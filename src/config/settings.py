@@ -32,6 +32,8 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'chat',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'schapy',
+    'authtest',
+    'accounts',
 ]
 
 MIDDLEWARE = [
@@ -128,3 +132,24 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static/')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8080', 'http://localhost:8080']
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'home'
+
+ASGI_APPLICATION = "config.asgi.application"
+
+CACHES = {
+       "default": {
+           "BACKEND": "django_redis.cache.RedisCache",
+           "LOCATION": "redis://redis:6379/1",  # redis://<サービス名>:<ポート>/<DB番号>
+           "OPTIONS": {
+               "CLIENT_CLASS": "django_redis.client.DefaultClient",
+           }
+       }
+   }
+
+   # セッションストアとして Redis を使う場合（オプション）
+   SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+   SESSION_CACHE_ALIAS = "default"

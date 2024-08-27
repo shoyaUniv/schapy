@@ -15,11 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 import schapy.views
 
 urlpatterns = [
+    path('chat/', include("chat.urls")),
     path('admin/', admin.site.urls),
     path('top/', schapy.views.root),
+    path('app01/', include('authtest.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
     # path('', schapy.views.root),
 ]

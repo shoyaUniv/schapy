@@ -8,7 +8,11 @@ services:
     volumes:
       - ./src:/code
     depends_on: 
-      - db 
+      - db
+      - redis  # Redis への依存関係を追加
+    environment:
+      - REDIS_HOST=redis  # 環境変数を設定（必要に応じて）
+
   db: 
     image: postgres:15.4 
     volumes: 
@@ -17,6 +21,12 @@ services:
       - POSTGRES_USER=iniad 
       - POSTGRES_PASSWORD=password 
       - POSTGRES_DB=testdb 
+
+  redis:
+    image: redis:alpine  # Redis サービスを追加
+    expose: 
+      - 6379  # Redis のデフォルトポート
+
   nginx:
     image: nginx:latest     
     volumes:       
@@ -26,6 +36,6 @@ services:
       - 8080:80     
     depends_on:       
       - django
+
 volumes: 
   postgres-data:
-
