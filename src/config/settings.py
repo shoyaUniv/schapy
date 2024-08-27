@@ -150,6 +150,19 @@ CACHES = {
        }
    }
 
-   # セッションストアとして Redis を使う場合（オプション）
-   SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-   SESSION_CACHE_ALIAS = "default"
+# セッションストアとして Redis を使う場合（オプション）
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+# ASGI アプリケーションの設定
+ASGI_APPLICATION = "schapy.asgi.application"
+
+# Channels レイヤーの設定
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],  # Redis コンテナのホスト名とポート
+        },
+    },
+}

@@ -6,3 +6,5 @@ wheel
 channels[daphne]
 daphne
 django-redis
+channels
+channels_redis
