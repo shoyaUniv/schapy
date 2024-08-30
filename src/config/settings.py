@@ -12,16 +12,20 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env()
+env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-6kjk#7o$^dg^72mjpt+40)du3jvve+l^#7cp68fg4vl$db%&&='
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -141,21 +145,18 @@ LOGOUT_REDIRECT_URL = 'home'
 ASGI_APPLICATION = "config.asgi.application"
 
 CACHES = {
-       "default": {
-           "BACKEND": "django_redis.cache.RedisCache",
-           "LOCATION": "redis://redis:6379/1",  # redis://<サービス名>:<ポート>/<DB番号>
-           "OPTIONS": {
-               "CLIENT_CLASS": "django_redis.client.DefaultClient",
-           }
+   "default": {
+       "BACKEND": "django_redis.cache.RedisCache",
+       "LOCATION": "redis://redis:6379/1",  # URL 修正
+       "OPTIONS": {
+           "CLIENT_CLASS": "django_redis.client.DefaultClient",
        }
    }
+}
 
 # セッションストアとして Redis を使う場合（オプション）
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
-
-# ASGI アプリケーションの設定
-ASGI_APPLICATION = "schapy.asgi.application"
 
 # Channels レイヤーの設定
 CHANNEL_LAYERS = {

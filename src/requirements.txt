@@ -8,3 +8,5 @@ daphne
 django-redis
 channels
 channels_redis
+python-decouple
+django-environ

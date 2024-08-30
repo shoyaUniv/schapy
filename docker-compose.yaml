@@ -2,16 +2,17 @@ version: '3.8'
 services:
   django:
     build: ./django
-    command: uvicorn config.asgi:application --host 0.0.0.0 --port 8000
-    expose: 
-      - 8000
+    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application  # Daphne に変更
+    ports:
+      - "8000:8000"
     volumes:
       - ./src:/code
     depends_on: 
       - db
-      - redis  # Redis への依存関係を追加
+      - redis
     environment:
-      - REDIS_HOST=redis  # 環境変数を設定（必要に応じて）
+      - REDIS_HOST=redis
+    env_file: ./django/.env
 
   db: 
     image: postgres:15.4 
@@ -23,17 +24,19 @@ services:
       - POSTGRES_DB=testdb 
 
   redis:
-    image: redis:alpine  # Redis サービスを追加
-    expose: 
-      - 6379  # Redis のデフォルトポート
+    image: redis:alpine
+    ports: 
+      - "6379:6379"
 
   nginx:
     image: nginx:latest     
     volumes:       
       - ./nginx/conf:/etc/nginx/conf.d      
-      - ./src/collected_static:/static     
+      - ./src/collected_static:/static
+      - ./nginx/ssl:/etc/nginx/ssl  # SSL 証明書のマウント
     ports:       
-      - 8080:80     
+      - "8080:80"
+      - "8443:443"     
     depends_on:       
       - django
 
