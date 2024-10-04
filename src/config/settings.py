@@ -30,6 +30,7 @@ env.read_env(os.path.join(BASE_DIR, ".env"))
 SECRET_KEY = env("SECRET_KEY")
 OPENAI_API_KEY = config('OPENAI_API_KEY')
 OPENAI_API_URL = config('OPENAI_API_URL')
+LINE_NOTIFY_TOKEN = config('LINE_NOTIFY_TOKEN')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
