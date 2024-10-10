@@ -19,7 +19,8 @@ from django.urls import include, path
 import schapy.views
 
 urlpatterns = [
-    path('chat/', include("chat.urls")),
+    # path('chat/', include("chat.urls")),
+    path('app01/chat/', include("chat.urls")),
     path('admin/', admin.site.urls),
     path('top/', schapy.views.root),
     path('app01/', include('authtest.urls')),

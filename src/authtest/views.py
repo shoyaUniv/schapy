@@ -9,5 +9,9 @@ def home(request):
 def private_page(request):
     return render(request, 'authtest/private.html', {})
 
+@login_required
+def chat_page(request):
+    return render(request, 'chat/index.html', {})
+
 def public_page(request):
     return render(request, 'authtest/public.html', {})

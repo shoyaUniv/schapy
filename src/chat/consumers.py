@@ -1,4 +1,5 @@
 import json
+import redis
 import requests
 
 from django.urls import reverse
@@ -11,6 +12,8 @@ from langchain.agents import Tool, initialize_agent, AgentType
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_community.chat_models import ChatOpenAI
 
+r = redis.StrictRedis(host='redis', port=6379, db=0)  # Redisサーバーの設定
+
 OPENAI_API_KEY = settings.OPENAI_API_KEY
 OPENAI_API_BASE = settings.OPENAI_API_URL
 LINE_NOTIFY_TOKEN = settings.LINE_NOTIFY_TOKEN
@@ -22,6 +25,11 @@ class ChatConsumer(WebsocketConsumer):
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
         # ルームグループ名を設定
         self.room_group_name = "chat_%s" % self.room_name
+
+        # 認証されたユーザー名を取得
+        user = self.scope["user"]
+        username = user.username
+
         # ルームグループに参加
         async_to_sync(self.channel_layer.group_add)(
             self.room_group_name, self.channel_name
@@ -29,63 +37,38 @@ class ChatConsumer(WebsocketConsumer):
         # WebSocket接続を受け入れる
         self.accept()
 
+        # Redisにユーザー名を登録
+        r.sadd(self.room_group_name, username)
+
+        # 現在接続中の全ユーザー名を取得して送信
+        all_users = r.smembers(self.room_group_name)
+        self.send(text_data=json.dumps({
+            'message': f'現在接続中のユーザー: {", ".join(user.decode() for user in all_users)}'
+        }))
+
     # WebSocket切断時に呼ばれるメソッド
     def disconnect(self, close_code):
+        # 認証されたユーザー名を取得
+        user = self.scope["user"]
+        username = user.username
+
+        # ユーザー名をRedisから削除
+        r.srem(self.room_group_name, username)
+
         # ルームグループから退出
         async_to_sync(self.channel_layer.group_discard)(
-            self.room_group_name, self.channel_name
+            self.room_group_name,
+            self.channel_name
         )
-
-    # WebSocketからメッセージを受信した時に呼ばれるメソッド
-    # def receive(self, text_data):
-    #     # 受信したメッセージをJSON形式にデコード
-    #     text_data_json = json.loads(text_data)
-    #     message = text_data_json["message"]
-    #     flag = False
-        
-    #     # ChatGPT APIを使用して、メッセージをポジティブな絵文字に変換
-    #     chat = ChatOpenAI(
-    #         openai_api_key=OPENAI_API_KEY, 
-    #         openai_api_base=OPENAI_API_BASE, 
-    #         model_name='gpt-4o-mini', 
-    #         temperature=0
-    #     )
-    #     content = f"""
-    #     文字列「{message}」の感情分析をしてください。
-    #     「{message}」がポジティブな文章であれば、そのまま出力してください。
-    #     「{message}」がネガティブな文章であれば、「{message}」を必ずポジティブな言葉に変換したうえで、
-    #     「{message}」に\"Negative Flag\"という文字列を追加してください。
-    #     """
-    #     messages = [
-    #         HumanMessage(content=content),
-    #     ]
-        
-    #     # ChatGPT APIからの応答を取得
-    #     result = chat(messages)
-
-    #     sentence = result.content
-
-    #     if "Negative Flag" in sentence:
-    #         flag = True
-        
-    #     received_message = sentence.replace("Negative Flag", "")
-
-    #     if flag :
-    #         message = f"○○さんがネガティブな文章を送信しました。"
-    #         self.send_line_notify(message)
-    #         filtered_text = get_last_line(received_message)
-    #         received_message = filtered_text
-        
-    #     # 変換されたメッセージをルームグループに送信
-    #     async_to_sync(self.channel_layer.group_send)(
-    #         self.room_group_name, {"type": "chat_message", "message": received_message}
-    #     )
 
     def receive(self, text_data):
         # 受信したメッセージをJSON形式にデコード
         text_data_json = json.loads(text_data)
         message = text_data_json["message"]
-        # flag = False
+
+        # 現在のユーザー名を取得
+        user = self.scope["user"]
+        username = user.username  # ここで送信者のユーザー名を取得
         
         # ChatGPT APIを使用して、メッセージをポジティブな絵文字に変換
         chat = ChatOpenAI(
@@ -119,7 +102,7 @@ class ChatConsumer(WebsocketConsumer):
         data = json.loads(result.content)
 
         if data['flag'] == 0:
-            message = f"○○さんがネガティブな文章を送信しました。"
+            message = f"{username}さんがネガティブな文章を送信しました。"
             self.send_line_notify(message)
             received_message = data['changed']
         else:
@@ -143,15 +126,3 @@ class ChatConsumer(WebsocketConsumer):
         payload = {"message": message}
         response = requests.post(url, headers=headers, data=payload)
         return response.status_code
-    
-    # def get_last_line(self, text):
-    #     # 文字列を改行で分割し、最後の行を取得する
-    #     lines = text.strip().split('\n')
-    #     return lines[-1].strip()
-
-    # def remove_lines_with_keyword(self, text, keyword):
-    #     # 文字列を行ごとに分割し、キーワードを含む行を除外
-    #     filtered_lines = [line for line in text.splitlines() if keyword not in line]
-        
-    #     # フィルタリングされた行を再結合して結果を返す
-    #     return "\n".join(filtered_lines)

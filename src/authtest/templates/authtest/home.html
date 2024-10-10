@@ -5,6 +5,7 @@
     {% if user.is_authenticated %}
     <p>Hi {{ user.username }}!</p>
     <!-- <a href="{% url 'logout' %}">logout</a> -->
+    <p><a href="{% url 'chat' %}">chatページ</a></p>
     <form method="POST" action="{% url 'logout' %}">
       {% csrf_token %}
       <button type="submit">Logout</button>

@@ -1,49 +1,139 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-    <meta charset="utf-8"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Room</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 10px;
+            background-color: #f2f2f2;
+            height: 80vh;
+            overflow-y: scroll;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+        }
+        .message-left, .message-right {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .message-left {
+            justify-content: flex-start;
+        }
+        .message-right {
+            justify-content: flex-end;
+        }
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+        .message-left .message-bubble {
+            background-color: #fff;
+            border: 1px solid #ccc;
+        }
+        .message-right .message-bubble {
+            background-color: #dcf8c6;
+            color: #000;
+        }
+        .input-container {
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 10px;
+            border-radius: 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <textarea id="chat-log" cols="100" rows="20"></textarea><br>
-    <input id="chat-message-input" type="text" size="100"><br>
-    <input id="chat-message-submit" type="button" value="Send">
-    {{ room_name|json_script:"room-name" }}
-    <script>
-        const roomName = JSON.parse(document.getElementById('room-name').textContent);
 
-        const chatSocket = new WebSocket(
-            'ws://'
-            + window.location.host
-            + '/ws/chat/'
-            + roomName
-            + '/'
-        );
+<div class="chat-container" id="chat-log">
+    <!-- メッセージがここに追加されます -->
+</div>
 
-        chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            document.querySelector('#chat-log').value += (data.message + '\n');
-        };
+<div class="input-container">
+    <input id="chat-message-input" type="text" placeholder="メッセージを入力...">
+    <button id="chat-message-submit">送信</button>
+</div>
 
-        chatSocket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
-        };
+{{ room_name|json_script:"room-name" }}
 
-        document.querySelector('#chat-message-input').focus();
-        document.querySelector('#chat-message-input').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
-                document.querySelector('#chat-message-submit').click();
-            }
-        };
+<script>
+    const roomName = JSON.parse(document.getElementById('room-name').textContent);
 
-        document.querySelector('#chat-message-submit').onclick = function(e) {
-            const messageInputDom = document.querySelector('#chat-message-input');
-            const message = messageInputDom.value;
+    const chatSocket = new WebSocket(
+        'ws://'
+        + window.location.host
+        + '/ws/app01/chat/'
+        + roomName
+        + '/'
+    );
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        addMessage('left', data.message);  // 他のユーザーからのメッセージは左側に表示
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    document.querySelector('#chat-message-input').focus();
+    document.querySelector('#chat-message-input').onkeyup = function(e) {
+        if (e.keyCode === 13) {  // enter, return
+            document.querySelector('#chat-message-submit').click();
+        }
+    };
+
+    document.querySelector('#chat-message-submit').onclick = function(e) {
+        const messageInputDom = document.querySelector('#chat-message-input');
+        const message = messageInputDom.value;
+        if (message.trim() !== "") {
+            addMessage('right', message);  // 自分のメッセージは右側に表示
             chatSocket.send(JSON.stringify({
                 'message': message
             }));
             messageInputDom.value = '';
-        };
-    </script>
+        }
+    };
+
+    // メッセージをチャットに追加する関数
+    function addMessage(side, message) {
+        const chatLog = document.getElementById('chat-log');
+
+        const messageContainer = document.createElement('div');
+        messageContainer.classList.add(side === 'right' ? 'message-right' : 'message-left');
+
+        const messageBubble = document.createElement('div');
+        messageBubble.classList.add('message-bubble');
+        messageBubble.textContent = message;
+
+        messageContainer.appendChild(messageBubble);
+        chatLog.appendChild(messageContainer);
+
+        // チャットを最下部までスクロール
+        chatLog.scrollTop = chatLog.scrollHeight;
+    }
+</script>
+
 </body>
 </html>
