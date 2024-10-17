@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from decouple import config
+from dotenv import load_dotenv
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,6 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
 env.read_env(os.path.join(BASE_DIR, ".env"))
+
+# .envファイルを読み込む
+load_dotenv()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -31,6 +35,9 @@ SECRET_KEY = env("SECRET_KEY")
 OPENAI_API_KEY = config('OPENAI_API_KEY')
 OPENAI_API_URL = config('OPENAI_API_URL')
 LINE_NOTIFY_TOKEN = config('LINE_NOTIFY_TOKEN')
+
+# Google Drive APIのJSONファイルパスを環境変数から取得
+GOOGLE_DRIVE_API_JSON_PATH = os.getenv('GOOGLE_DRIVE_API_JSON_PATH')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -172,3 +179,10 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+# パスの確認
+if not GOOGLE_DRIVE_API_JSON_PATH:
+    raise ValueError("Google Drive API JSON path is not set in the environment variables.")
+
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media') #追加
+# MEDIA_URL = '/media/' #追加

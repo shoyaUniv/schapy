@@ -7,11 +7,13 @@ services:
       - "8000:8000"
     volumes:
       - ./src:/code
+      - ./src/config/google-drive-api.json:/app/src/config/google-drive-api.json  # JSON ファイルのマウントを追加
     depends_on: 
       - db
       - redis
     environment:
       - REDIS_HOST=redis
+      - GOOGLE_DRIVE_API_JSON_PATH=/app/src/config/google-drive-api.json  # 環境変数を設定
     env_file: ./django/.env
 
   db: 

@@ -1,139 +1,166 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8"/>
     <title>Chat Room</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        .chat-container {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 10px;
-            background-color: #f2f2f2;
-            height: 80vh;
-            overflow-y: scroll;
-            border-radius: 10px;
-            border: 1px solid #ccc;
-        }
-        .message-left, .message-right {
-            display: flex;
-            margin-bottom: 10px;
-        }
-        .message-left {
-            justify-content: flex-start;
-        }
-        .message-right {
-            justify-content: flex-end;
-        }
+        /* 簡易的なスタイル */
         .message-bubble {
-            max-width: 70%;
-            padding: 10px;
-            border-radius: 20px;
-            font-size: 16px;
+            padding: 5px;
+            margin: 5px;
+            border-radius: 10px;
         }
-        .message-left .message-bubble {
-            background-color: #fff;
-            border: 1px solid #ccc;
+        .text-message {
+            background-color: #f2f2f2;
+            display: inline-block;
         }
-        .message-right .message-bubble {
-            background-color: #dcf8c6;
-            color: #000;
-        }
-        .input-container {
-            margin-top: 10px;
-            display: flex;
-            justify-content: space-between;
-        }
-        input[type="text"] {
-            width: 80%;
-            padding: 10px;
-            border-radius: 20px;
-            border: 1px solid #ccc;
-        }
-        button {
-            padding: 10px;
-            border-radius: 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
+        .image-message img {
+            max-width: 200px;  /* 画像の表示サイズを調整 */
+            border-radius: 10px;
+            display: inline-block;
         }
     </style>
 </head>
 <body>
+    <div id="chat-log"></div><br>
+    <input id="chat-message-input" type="text" size="100"><br>
+    <input id="chat-message-submit" type="button" value="Send"><br>
 
-<div class="chat-container" id="chat-log">
-    <!-- メッセージがここに追加されます -->
-</div>
+    <!-- 画像アップロード用のフォーム -->
+    <input id="chat-image-input" type="file" accept="image/*"><br>
+    <input id="chat-image-submit" type="button" value="Upload Image">
 
-<div class="input-container">
-    <input id="chat-message-input" type="text" placeholder="メッセージを入力...">
-    <button id="chat-message-submit">送信</button>
-</div>
+    {{ room_name|json_script:"room-name" }}
+    
+    <script>
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+    
+        const chatSocket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/app01/chat/'
+            + roomName
+            + '/'
+        );
+    
+        //メッセージを受け取る処理
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+    
+            if (data.message.includes('が画像を送信しました: ')) {
+                // 画像が送信された場合
+                // URL or 絵文字を受け取る
+                const obj = data.message.split('が画像を送信しました: ')[1]; 
+                if (obj.includes('😊')) {
+                    // 絵文字が送信された場合
+                    addTextMessage(obj);
+                } else {
+                    // 画像URLが送信された場合
+                    addImageMessage(obj);
+                }
+            } else {
+                // テキストメッセージが送信された場合の処理
+                addTextMessage(data.message);
+            }
+        };
+    
+        // WebSocket切断時、エラーをコンソールに出力
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
 
-{{ room_name|json_script:"room-name" }}
+        // 入力ボックスに自動的にフォーカスを設定
+        document.querySelector('#chat-message-input').focus();
 
-<script>
-    const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        // Enterキーが押された場合、送信ボタンをクリックする処理
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            // Enterキー（キーコード13）が押されたとき
+            if (e.keyCode === 13) { 
+                // 送信ボタンをクリック
+                document.querySelector('#chat-message-submit').click(); 
+            }
+        };
 
-    const chatSocket = new WebSocket(
-        'ws://'
-        + window.location.host
-        + '/ws/app01/chat/'
-        + roomName
-        + '/'
-    );
-
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        addMessage('left', data.message);  // 他のユーザーからのメッセージは左側に表示
-    };
-
-    chatSocket.onclose = function(e) {
-        console.error('Chat socket closed unexpectedly');
-    };
-
-    document.querySelector('#chat-message-input').focus();
-    document.querySelector('#chat-message-input').onkeyup = function(e) {
-        if (e.keyCode === 13) {  // enter, return
-            document.querySelector('#chat-message-submit').click();
-        }
-    };
-
-    document.querySelector('#chat-message-submit').onclick = function(e) {
-        const messageInputDom = document.querySelector('#chat-message-input');
-        const message = messageInputDom.value;
-        if (message.trim() !== "") {
-            addMessage('right', message);  // 自分のメッセージは右側に表示
+        // テキストメッセージを送信する処理
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            // メッセージ入力フィールド取得
+            const msgInputer = document.querySelector('#chat-message-input');
+            // 入力メッセージ取得
+            const message = msgInputer.value;
+            // WebSocketを用いて、サーバーにメッセージ送信
             chatSocket.send(JSON.stringify({
+                // メッセージタイプは'text'
+                'type': 'text',
+                // メッセージ内容
                 'message': message
             }));
-            messageInputDom.value = '';
+            // メッセージ入力フィールドを白紙にする
+            msgInputer.value = '';
+        };
+
+        // 画像をアップロードし、送信する処理
+        document.querySelector('#chat-image-submit').onclick = function(e) {
+            // 画像ファイル入力フィールドを取得
+            const imgInputer = document.querySelector('#chat-image-input');
+            const fl = imgInputer.files[0];  // 選択された最初のファイルを取得
+
+            // ファイルが選択された場合
+            if (fl) {
+                // FileReaderを使用し、ファイル読み込み
+                const read = new FileReader();
+                read.onload = function(event) {
+                    // 画像データ(Base64)を取得
+                    const imgData = event.target.result;
+                    // WebSocketを用いて、サーバーに画像データ送信
+                    chatSocket.send(JSON.stringify({
+                        // メッセージタイプは'image'
+                        'type': 'image',  
+                         // 画像データ
+                        'image_data': imgData
+                    }));
+                };
+                // 画像データをBase64に変換
+                read.readAsDataURL(fl);
+            }
+        };
+
+        // テキストをチャットに追加
+        function addTextMessage(message) {
+            // チャットログの要素取得
+            const chatLogs = document.getElementById('chat-log');
+            // 新しいメッセージのdivを作成
+            const msgDiv = document.createElement('div');
+            // テキストのスタイル追加
+            msgDiv.classList.add('message-bubble', 'text-message');
+            // 内容の設定
+            msgDiv.textContent = message;
+            // チャットログへメッセージ追加
+            chatLogs.appendChild(msgDiv);
+            // チャットログを自動スクロール
+            chatLogs.scrollTop = chatLogs.scrollHeight;
         }
-    };
 
-    // メッセージをチャットに追加する関数
-    function addMessage(side, message) {
-        const chatLog = document.getElementById('chat-log');
-
-        const messageContainer = document.createElement('div');
-        messageContainer.classList.add(side === 'right' ? 'message-right' : 'message-left');
-
-        const messageBubble = document.createElement('div');
-        messageBubble.classList.add('message-bubble');
-        messageBubble.textContent = message;
-
-        messageContainer.appendChild(messageBubble);
-        chatLog.appendChild(messageContainer);
-
-        // チャットを最下部までスクロール
-        chatLog.scrollTop = chatLog.scrollHeight;
-    }
-</script>
-
+        // 画像をチャットログに追加
+        function addImageMessage(imgUrl) {
+            // チャットログの要素取得
+            const chatLogs = document.getElementById('chat-log');
+            // 新しいメッセージのdivを作成
+            const msgDiv = document.createElement('div');
+            // 画像ののスタイル追加
+            msgDiv.classList.add('message-bubble', 'image-message');
+            // img要素作成
+            const imgEle = document.createElement('img');
+            // 画像URL設定
+            imgEle.src = imgUrl;
+            // 画像サイズの最大幅調整
+            imgEle.style.maxWidth = '20%'
+            // 画像をメッセージに追加;
+            msgDiv.appendChild(imgEle);
+            // チャットログにメッセージを追加
+            chatLogs.appendChild(msgDiv);
+            // チャットログを自動スクロール
+            chatLogs.scrollTop = chatLogs.scrollHeight;
+        }
+    </script>        
 </body>
 </html>

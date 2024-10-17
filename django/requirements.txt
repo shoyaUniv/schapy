@@ -9,9 +9,14 @@ django-redis
 channels
 channels_redis
 python-decouple
+python-dotenv
 django-environ
 openai 
 langchain 
 langchain-community 
 langchain-core 
 requests
+pytesseract
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

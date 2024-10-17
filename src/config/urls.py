@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.conf import settings  # settingsのインポート
+from django.conf.urls.static import static  # staticのインポート
 import schapy.views
 
 urlpatterns = [
@@ -26,4 +28,4 @@ urlpatterns = [
     path('app01/', include('authtest.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     # path('', schapy.views.root),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
