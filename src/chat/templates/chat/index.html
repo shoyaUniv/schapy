@@ -1,29 +1,113 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8"/>
-    <title>Chat Rooms</title>
-</head>
-<body>
-    {% if user.is_authenticated %}
-    <p>Hi {{ user.username }}!</p>
-    What chat room would you like to enter?<br>
-    <input id="room-name-input" type="text" size="100"><br>
-    <input id="room-name-submit" type="button" value="Enter">
-    {% endif %}
+    <head>
+        <meta charset="UTF-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style type="text/css">
+                html {
+                  font-size: 100%;
+                  margin: 0;
+                  padding: 0;
+                }
+          
+                body {
+                  font-family: "游ゴシック体", YuGothic, "游ゴシック", "Yu Gothic", sans-serif;
+                  min-height: 100vh;
+                  line-height: 1.5; /* 行間を1.5倍に設定 */
+                  margin: 0;
+                  text-align: center;
+                }
+          
+                header {
+                  border-bottom: 3px solid #00CCFF;
+                  padding: 0px 0; /* 上下の余白を追加 */
+                  text-align: center; /* テキストを中央揃え */
+                  color: #00CCFF;
+                }
+          
+                header a {
+                  text-decoration: none;
+                  color: inherit;
+                  display: block; /* aタグをブロック要素にすることで、全体をクリック可能に */
+                  padding: 2px 0; /* 上下に20pxの余白を追加 */
+                }
+          
+                header a h1 {
+                  font-size: 36px;
+                  font-weight: bold;
+                  margin: 0; /* 余計なマージンを削除 */
+                }
+          
+                header a p {
+                  font-size: 9px;
+                  margin: 0; /* 余計なマージンを削除 */
+                }
+          
+                img, picture {
+                  max-width: 100%;
+                  display: block;
+                }
+          
+                ul[role='list'], ol[role='list'] {
+                  list-style: none;
+                }
+          
+                input, button, textarea, select {
+                  font: inherit;
+                }
+      
+                .typing-animation {
+                  width: 100ch;
+                  border-right: 5px solid #000000;
+                  overflow: hidden;
+                  white-space: nowrap;
+                  color:#000000;
+                  font-size:1.5rem;
+                  line-height:1.4;
+                  font-weight:7;
+                  animation: typing 3s steps(23), blink .4s step-end infinite alternate;
+                }
+                @keyframes typing {
+                  from {
+                    width: 0;
+                  }
+                }
+                @keyframes blink {
+                  50% {
+                    border-color: transparent;
+                  }
+                }
+              </style>
+            <title>Chat Room</title>
+    </head>
+    
+    <header>
+        <a href="{% url 'root' %}">
+          <h1>Schapy</h1>
+        </a>  
+    </header>
 
-    <script>
-        document.querySelector('#room-name-input').focus();
-        document.querySelector('#room-name-input').onkeyup = function(e) {
-            if (e.keyCode === 13) {  // enter, return
-                document.querySelector('#room-name-submit').click();
-            }
-        };
+    <body>
+        {% if user.is_authenticated %}
+        <p class="typing-animation">こんにちは。 {{ user.username }}さん!</p>
+        <p class="typing-animation">どのルームに入りますか。適当なルーム名を記述してください。</p><br>
+        <input id="room-name-input" type="text" size="100"><br>
+        <input id="room-name-submit" type="button" value="Enter">
+        {% endif %}
 
-        document.querySelector('#room-name-submit').onclick = function(e) {
-            var roomName = document.querySelector('#room-name-input').value;
-            window.location.pathname = '/app01/chat/' + roomName + '/';
-        };
-    </script>
-</body>
+        <script>
+            document.querySelector('#room-name-input').focus();
+            document.querySelector('#room-name-input').onkeyup = function(e) {
+                if (e.keyCode === 13) {  // enter, return
+                    document.querySelector('#room-name-submit').click();
+                }
+            };
+
+            document.querySelector('#room-name-submit').onclick = function(e) {
+                var roomName = document.querySelector('#room-name-input').value;
+                window.location.pathname = '/app01/chat/' + roomName + '/';
+            };
+        </script>
+    </body>
 </html>

@@ -1,8 +1,11 @@
+{% load static %}
+
 <html lang="ja">
   <head>
     <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- <link rel="stylesheet" href="{% static 'schapy/css/root.css' %}" type="text/css"> -->
         <style type="text/css">
           html {
             font-size: 100%;
@@ -78,7 +81,7 @@
             }
           }
         </style>
-        <title>Chat Room</title>
+        <title>Schapy</title>
   </head>
 
   <header>
@@ -86,27 +89,14 @@
       <h1>Schapy</h1>
     </a>  
   </header>
-  
+
   <body>
-    <h1>Home</h1>
+    <h1>Schapy</h1>
 
-    {% if user.is_authenticated %}
-    <p class="typing-animation">Hi {{ user.username }}!</p>
-    <!-- <a href="{% url 'logout' %}">logout</a> -->
-    <p><a href="{% url 'chat' %}">ここをクリック！
-    </a></p>
-    <form method="POST" action="{% url 'logout' %}">
-      {% csrf_token %}
-      <button type="submit">ログアウト</button>
-    </form>
-  
-    {% else %}
-    <p class="typing-animation">ログインされていません。ログインしよう！</p>
-    <p class="typing-animation"><a href="{% url 'login' %}">ログインはこちら</a></p>
-    {% endif %}
+    <h3>INIADへようこそ！</h3>
+    <p class="typing-animation">このアプリケーションでは誹謗中傷的文章の判定、変換を体験できます。</p>
 
-    <hr>
-    <!-- <p><a href="{% url 'priv' %}">priv</a></p>
-    <p><a href="{% url 'pub' %}">public</a></p> -->
+    <p><a href="{% url 'home' %}">NEXT</a></p>
+
 </body>
 </html>

@@ -1,15 +1,100 @@
-<html lang="ja"><head><meta charset="utf-8"></head>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <style type="text/css">
+      html {
+        font-size: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "游ゴシック体", YuGothic, "游ゴシック", "Yu Gothic", sans-serif;
+        min-height: 100vh;
+        line-height: 1.5; /* 行間を1.5倍に設定 */
+        margin: 0;
+        text-align: center;
+      }
+
+      header {
+        border-bottom: 3px solid #00CCFF;
+        padding: 0px 0; /* 上下の余白を追加 */
+        text-align: center; /* テキストを中央揃え */
+        color: #00CCFF;
+      }
+
+      header a {
+        text-decoration: none;
+        color: inherit;
+        display: block; /* aタグをブロック要素にすることで、全体をクリック可能に */
+        padding: 2px 0; /* 上下に20pxの余白を追加 */
+      }
+
+      header a h1 {
+        font-size: 36px;
+        font-weight: bold;
+        margin: 0; /* 余計なマージンを削除 */
+      }
+
+      header a p {
+        font-size: 9px;
+        margin: 0; /* 余計なマージンを削除 */
+      }
+
+      img, picture {
+        max-width: 100%;
+        display: block;
+      }
+
+      ul[role='list'], ol[role='list'] {
+        list-style: none;
+      }
+
+      input, button, textarea, select {
+        font: inherit;
+      }
+
+      .typing-animation {
+        width: 100ch;
+        border-right: 5px solid #000000;
+        overflow: hidden;
+        white-space: nowrap;
+        color:#000000;
+        font-size:1.5rem;
+        line-height:1.4;
+        font-weight:7;
+        animation: typing 3s steps(23), blink .4s step-end infinite alternate;
+      }
+      @keyframes typing {
+        from {
+          width: 0;
+        }
+      }
+      @keyframes blink {
+        50% {
+          border-color: transparent;
+        }
+      }
+    </style>
+  </head>
+
+  <header>
+    <a href="{% url 'root' %}">
+      <h1>Schapy</h1>
+    </a>  
+  </header>
+
   <body>
-    <h1>Login</h1>
-{% if form.errors %}
-<p>Your username and password didn't match. Please try again.</p>
-{% endif %}
+    <h1>ログイン</h1>
+      {% if form.errors %}
+      <p>名前かパスワードが間違っています！</p>
+      {% endif %}
     <form method="post">
       {% csrf_token %}
       {{ form.as_p }}
       <input type="submit" value="Login" />
     </form>
 
-    <p><a href="{% url 'home' %}">home</a></p>
+    <p><a href="{% url 'home' %}">ホーム</a></p>
   </body>
 </html>

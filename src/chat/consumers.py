@@ -225,41 +225,50 @@ class ChatConsumer(WebsocketConsumer):
         return service
 
     def read_ocr(self, service, input_file, lang='en'):
+        #サービスアカウントのメールアドレスを自分のアカウントのフォルダに設定済み
+        # アップロードするファイルをGoogle Driveに送信する準備
         media_body = MediaFileUpload(input_file, mimetype=MIME_TYPE, resumable=True)
 
-        # Google Drive上のファイル名
+        # Google Drive上で新ファイル名を設定
         newfile = 'output.pdf'
 
+        # アップロードするファイルのメタデータ設定
         body = {
             'name': newfile,
             'mimeType': MIME_TYPE
         }
 
+        # Driveにファイルをアップロードし、OCRを実行
         output = service.files().create(
             body=body,
             media_body=media_body,
-            ocrLanguage=lang,
+            ocrLanguage=lang,  # OCRの言語指定（デフォルトは英語）
         ).execute()
 
+        # アップロードされたファイルをテキスト形式でエクスポートするリクエスト
         request = service.files().export_media(
-            fileId=output['id'],
-            mimeType="text/plain"
+            fileId=output['id'],  # アップロードしたファイルのID
+            mimeType="text/plain"  # エクスポート形式をテキストへ指定
         )
 
+        # エクスポートしたテキストデータを保存するファイルパス
         output_path = 'output.txt'
 
+        # エクスポートしたデータをダウンロードし、ファイルに書き込む準備
         fh = io.FileIO(output_path, "wb")
         downloader = MediaIoBaseDownload(fh, request)
         done = False
         while done is False:
+            # データをダウンロードする
             status, done = downloader.next_chunk()
 
-        # 一時ファイルを削除
+        # Driveに一時的にアップロードしたファイル削除
         service.files().delete(fileId=output['id']).execute()
 
-        # 修正部分: UTF-8エンコーディングでファイルを読み込み
+        # UTF-8エンコーディングでダウンロードしたテキストファイルを開いて行ごとに読み込む
         with open(output_path, encoding='utf-8') as f:
-            # 1行目を無視する場合は[1:], 全ての行を取得する場合はsplitlines()のみ
+            # 1行目を無視する場合は[1:]
             mylist = f.read().splitlines()[1:]
 
+        # 読み込んだテキストのリスト
         return mylist

@@ -4,4 +4,4 @@ from django.http import HttpResponse
 # Create your views here. 
 
 def root(request): 
-    return HttpResponse('Hello Django and Docker')
+    return render(request, 'schapy/root.html', {})
