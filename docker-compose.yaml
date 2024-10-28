@@ -2,7 +2,7 @@ version: '3.8'
 services:
   django:
     build: ./django
-    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application  # Daphne に変更
+    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
     ports:
       - "8000:8000"
     volumes:
@@ -33,7 +33,7 @@ services:
     volumes:       
       - ./nginx/conf:/etc/nginx/conf.d      
       - ./src/collected_static:/static
-      - ./nginx/ssl:/etc/nginx/ssl  # SSL 証明書のマウント
+      - ./nginx/ssl:/etc/nginx/ssl
     ports:       
       - "8080:80"
       - "8443:443"     
