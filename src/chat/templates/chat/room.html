@@ -6,8 +6,7 @@
     <title>ルーム</title>
 
     <style>
-        /* 簡易的なスタイル */
-        .message-bubble {
+        .message-received {
             padding: 5px;
             margin: 5px;
             border-radius: 10px;
@@ -17,7 +16,7 @@
             display: inline-block;
         }
         .image-message img {
-            max-width: 200px;  /* 画像の表示サイズを調整 */
+            max-width: 200px;
             border-radius: 10px;
             display: inline-block;
         }
@@ -31,34 +30,40 @@
           body {
             font-family: "游ゴシック体", YuGothic, "游ゴシック", "Yu Gothic", sans-serif;
             min-height: 100vh;
-            line-height: 1.5; /* 行間を1.5倍に設定 */
+            line-height: 1.5;
             margin: 0;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+          }
+
+          h3 {
             text-align: center;
           }
     
           header {
             border-bottom: 3px solid #00CCFF;
-            padding: 0px 0; /* 上下の余白を追加 */
-            text-align: center; /* テキストを中央揃え */
+            padding: 0px 0;
+            text-align: center;
             color: #00CCFF;
           }
     
           header a {
             text-decoration: none;
             color: inherit;
-            display: block; /* aタグをブロック要素にすることで、全体をクリック可能に */
-            padding: 2px 0; /* 上下に20pxの余白を追加 */
+            display: block;
+            padding: 2px 0;
           }
     
           header a h1 {
             font-size: 36px;
             font-weight: bold;
-            margin: 0; /* 余計なマージンを削除 */
+            margin: 0;
           }
     
           header a p {
             font-size: 9px;
-            margin: 0; /* 余計なマージンを削除 */
+            margin: 0;
           }
     
           img, picture {
@@ -74,26 +79,78 @@
             font: inherit;
           }
 
-          .typing-animation {
-            width: 100ch;
-            border-right: 5px solid #000000;
-            overflow: hidden;
-            white-space: nowrap;
-            color:#000000;
-            font-size:1.5rem;
-            line-height:1.4;
-            font-weight:7;
-            animation: typing 3s steps(23), blink .4s step-end infinite alternate;
+          #now-loading{
+            display: none; 
+            text-align: center; 
+            color: gray;
           }
-          @keyframes typing {
-            from {
-              width: 0;
-            }
+
+          #button-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+         }
+          
+         #chat-message-submit, #chat-image-submit {
+            background-color: #50df248c;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+         }
+
+         #chat-message-submit:hover, #chat-image-submit:hover {
+            background-color: #68d047;
+         }
+
+
+          .chat-log {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            width: 80%;
+            max-width: 600px;
+            height: 400px;
+            overflow-y: scroll;
+            background-color: #d8d8d87d;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
           }
-          @keyframes blink {
-            50% {
-              border-color: transparent;
-            }
+
+          .message-container {
+              display: flex;
+              margin: 10px 0;
+          }
+
+          .message-received {
+              padding: 10px;
+              border-radius: 15px;
+              max-width: 60%;
+              word-wrap: break-word;
+              box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+          }
+
+          .message-received.self {
+              background-color: #d1f4ff;
+              align-self: flex-start;
+          }
+
+          .message-received.other {
+              background-color: #f2f2f2;
+              align-self: flex-end;
+          }
+
+          .image-message img {
+              max-width: 100px;
+              max-height: 100px;
+              border-radius: 10px;
+          }
+
+          @media screen and (max-width: 600px) {
+              .message-received {
+                  max-width: 80%;
+              }
           }
 
     </style>
@@ -108,47 +165,76 @@
 
 <body>
     <div id="chat-log"></div><br>
-    <input id="chat-message-input" type="text" size="100"><br>
-    <input id="chat-message-submit" type="button" value="送信"><br>
+    <div id="now-loading">Now Loading...</div><br>
 
-    <!-- 画像アップロード用のフォーム -->
-    <input id="chat-image-input" type="file" accept="image/*"><br>
-    <input id="chat-image-submit" type="button" value="画像アップロード">
+    <div id="button-container">
+        <input id="chat-message-input" type="text" size="100">
+        <input id="chat-message-submit" type="button" value="送信" aria-label="テキストメッセージを送信">
+    </div><br>
+    <div id="button-container">
+        <input id="chat-image-input" type="file" accept="image/*">
+        <input id="chat-image-submit" type="button" value="画像アップロード" aria-label="画像をアップロード">
+    </div>
+    
+    <p>誹謗中傷的テキスト例：</p>
+    <ul>
+        <li>お前嫌い。</li>
+        <li>うざい</li>
+        <li>ゴミ</li>
+        <li>お前、うろうろするな。</li>
+    </ul>
+    <h4>テキストを投稿する際は個人名などは投稿しないでください。</h4>
+    <h4>画像を投稿する際は、保存されてしまいますので、他人に見せても良い画像、人が映っていない画像を投稿してください。</h4>
+    <h4>画像は責任を持って、削除していただきます。</h4>
 
     {{ room_name|json_script:"room-name" }}
     
     <script>
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
     
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const chatSocket = new WebSocket(
-            'ws://'
+            protocol
             + window.location.host
             + '/ws/app01/chat/'
             + roomName
             + '/'
         );
     
-        //メッセージを受け取る処理
+        // NowLoadingの表示
+        function printLoading() {
+            document.getElementById('now-loading').style.display = 'block';
+        }
+
+        // NowLoadingの非表示
+        function notLoading() {
+            document.getElementById('now-loading').style.display = 'none';
+        }
+
+        // メッセージを受け取る処理
         chatSocket.onmessage = function(e) {
+            notLoading();
+
             const data = JSON.parse(e.data);
-    
+
+            const sender = data.sender || 'ユーザー名';  // 送信者名を取得
+
             if (data.message.includes('が画像を送信しました: ')) {
                 // 画像が送信された場合
-                // URL or 絵文字を受け取る
                 const obj = data.message.split('が画像を送信しました: ')[1]; 
                 if (obj.includes('😊')) {
                     // 絵文字が送信された場合
-                    addTextMessage(obj);
+                    addTextMessage(sender, obj, 'other');
                 } else {
                     // 画像URLが送信された場合
-                    addImageMessage(obj);
+                    addImageMessage(sender, obj, 'other');
                 }
             } else {
                 // テキストメッセージが送信された場合の処理
-                addTextMessage(data.message);
+                addTextMessage(sender, data.message, 'other');
             }
         };
-    
+
         // WebSocket切断時、エラーをコンソールに出力
         chatSocket.onclose = function(e) {
             console.error('Chat socket closed unexpectedly');
@@ -159,93 +245,96 @@
 
         // Enterキーが押された場合、送信ボタンをクリックする処理
         document.querySelector('#chat-message-input').onkeyup = function(e) {
-            // Enterキー（キーコード13）が押されたとき
             if (e.keyCode === 13) { 
-                // 送信ボタンをクリック
                 document.querySelector('#chat-message-submit').click(); 
             }
         };
 
         // テキストメッセージを送信する処理
         document.querySelector('#chat-message-submit').onclick = function(e) {
-            // メッセージ入力フィールド取得
             const msgInputer = document.querySelector('#chat-message-input');
-            // 入力メッセージ取得
             const message = msgInputer.value;
-            // WebSocketを用いて、サーバーにメッセージ送信
-            chatSocket.send(JSON.stringify({
-                // メッセージタイプは'text'
-                'type': 'text',
-                // メッセージ内容
-                'message': message
-            }));
-            // メッセージ入力フィールドを白紙にする
-            msgInputer.value = '';
+            
+            if (message) {
+                printLoading();
+
+                chatSocket.send(JSON.stringify({
+                    'type': 'text',
+                    'message': message
+                }));
+
+                // 自分のメッセージを表示（送信後）
+                addTextMessage('あなた', message, 'self');
+                
+                msgInputer.value = '';
+            }
         };
 
         // 画像をアップロードし、送信する処理
         document.querySelector('#chat-image-submit').onclick = function(e) {
-            // 画像ファイル入力フィールドを取得
             const imgInputer = document.querySelector('#chat-image-input');
             const fl = imgInputer.files[0];  // 選択された最初のファイルを取得
 
-            // ファイルが選択された場合
             if (fl) {
-                // FileReaderを使用し、ファイル読み込み
+                printLoading();
+
                 const read = new FileReader();
                 read.onload = function(event) {
-                    // 画像データ(Base64)を取得
                     const imgData = event.target.result;
-                    // WebSocketを用いて、サーバーに画像データ送信
                     chatSocket.send(JSON.stringify({
-                        // メッセージタイプは'image'
                         'type': 'image',  
-                         // 画像データ
                         'image_data': imgData
                     }));
                 };
-                // 画像データをBase64に変換
                 read.readAsDataURL(fl);
             }
         };
 
         // テキストをチャットに追加
-        function addTextMessage(message) {
-            // チャットログの要素取得
+        function addTextMessage(sender, message, senderType = 'other') {
             const chatLogs = document.getElementById('chat-log');
-            // 新しいメッセージのdivを作成
+            const messageContainer = document.createElement('div');
             const msgDiv = document.createElement('div');
-            // テキストのスタイル追加
-            msgDiv.classList.add('message-bubble', 'text-message');
-            // 内容の設定
+            const senderSpan = document.createElement('span');
+
+            // 送信者名を表示
+            senderSpan.textContent = `${sender}: `;
+            senderSpan.classList.add('sender');
+
+            msgDiv.classList.add('message-received', senderType);
             msgDiv.textContent = message;
-            // チャットログへメッセージ追加
-            chatLogs.appendChild(msgDiv);
-            // チャットログを自動スクロール
+            
+            messageContainer.classList.add('message-container');
+            messageContainer.appendChild(senderSpan);  // 送信者名を追加
+            messageContainer.appendChild(msgDiv);
+            
+            chatLogs.appendChild(messageContainer);
             chatLogs.scrollTop = chatLogs.scrollHeight;
         }
 
-        // 画像をチャットログに追加
-        function addImageMessage(imgUrl) {
-            // チャットログの要素取得
+        // 画像をチャットに追加
+        function addImageMessage(sender, imgUrl, senderType = 'other') {
             const chatLogs = document.getElementById('chat-log');
-            // 新しいメッセージのdivを作成
+            const messageContainer = document.createElement('div');
             const msgDiv = document.createElement('div');
-            // 画像ののスタイル追加
-            msgDiv.classList.add('message-bubble', 'image-message');
-            // img要素作成
             const imgEle = document.createElement('img');
-            // 画像URL設定
+            const senderSpan = document.createElement('span');
+
+            // 送信者名を表示
+            senderSpan.textContent = `${sender}: `;
+            senderSpan.classList.add('sender');
+
+            msgDiv.classList.add('message-received', 'image-message', senderType);
             imgEle.src = imgUrl;
-            // 画像サイズの最大幅調整
-            imgEle.style.maxWidth = '20%'
-            // 画像をメッセージに追加;
+
             msgDiv.appendChild(imgEle);
-            // チャットログにメッセージを追加
-            chatLogs.appendChild(msgDiv);
-            // チャットログを自動スクロール
+            messageContainer.classList.add('message-container');
+            messageContainer.appendChild(senderSpan);  // 送信者名を追加
+            messageContainer.appendChild(msgDiv);
+            
+            chatLogs.appendChild(messageContainer);
             chatLogs.scrollTop = chatLogs.scrollHeight;
         }
-    </script>        
+    </script>    
 </body>
 </html>

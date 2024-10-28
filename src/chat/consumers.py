@@ -91,13 +91,23 @@ class ChatConsumer(WebsocketConsumer):
         user = self.scope["user"]
         username = user.username  # ここで送信者のユーザー名を取得
 
+        # r.sadd(self.room_group_name, username)
+        all_users = r.smembers(self.room_group_name)
+
+        # 現在のユーザー以外の名前をフィルタリングし、bytes型をstrに変換
+        otherUsers = [name.decode('utf-8') if isinstance(name, bytes) else name for name in all_users if name.decode('utf-8') != username]
+
         if data_type == 'text':
             message = text_data_json["message"]
             # ChatGPT APIを使用して、メッセージをポジティブな絵文字に変換
             received_data = self.gpt(message)
             
             if received_data['flag'] == 0:
-                message = f"{username}さんがネガティブな文章を送信しました。"
+                if otherUsers:
+                    other_users_print = ", ".join(otherUsers)
+                    message = f"{username}さんがネガティブな文章を送信しました。\n送信されたメッセージ：{message}\n他に{other_users_print}がいます。"
+                else:
+                    message = f"{username}さんがネガティブな文章を送信しました。"
                 self.send_line_notify(message)
                 received_message = received_data['changed']
             else:
@@ -105,7 +115,11 @@ class ChatConsumer(WebsocketConsumer):
             
             # 変換されたメッセージをルームグループに送信
             async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {"type": "chat_message", "message": received_message}
+                self.room_group_name, {
+                    "type": "chat_message", 
+                    "message": received_message, 
+                    "sender": username
+                }
             )     
         
         elif data_type == 'image':
@@ -129,17 +143,17 @@ class ChatConsumer(WebsocketConsumer):
                 # 空行を削除
                 output_text = ''.join(filter(None, output))
 
-                # Tesseractを使用して画像からテキストを抽出
-                # image_by = default_storage.open(file_path).read()  # 保存された画像を読み込む
-                # pi_image = Image.open(BytesIO(image_by))  # PILで画像を開く
-                # ex_text = pytesseract.image_to_string(pi_image)  # OCR処理
-
                 received_data = self.gpt(output_text)
 
                 if received_data['flag'] == 0:
-                    message = f"{username}さんがネガティブな画像を送信しました。"
+                    if otherUsers:
+                        other_users_print = ", ".join(otherUsers)
+                        message = f"{username}さんが良くない画像を送信しました。\n送信された画像の文字起こし：{output_text}\n他に{other_users_print}がいます。"
+                        image_url = '😊'
+                    else:
+                        message = f"{username}さんがネガティブな文章を送信しました。\n送信された画像の文字起こし：{output_text}"
+                        image_url = '😊'
                     self.send_line_notify(message)
-                    image_url = '😊'
                 else:
                     image_url = default_storage.url(save_pa)
 
@@ -150,26 +164,29 @@ class ChatConsumer(WebsocketConsumer):
 
             # 画像のURLをルームグループに送信
             async_to_sync(self.channel_layer.group_send)(
-                self.room_group_name, {"type": "chat_message", "message": f"{username} が画像を送信しました: {image_url}"}
+                self.room_group_name, {
+                    "type": "chat_message", 
+                    "message": f"{username} が画像を送信しました: {image_url}",
+                    "sender": username
+                }
             )
 
     # ルームグループからメッセージを受信した時に呼ばれるメソッド
     def chat_message(self, event):
-        # ルームグループからのメッセージを取得
-        message = event["message"]
-        image_data = event.get("image_data", None)
-        # 画像データがあるか確認
-        # WebSocketにテキストと画像データをJSON形式で送信
-        if image_data:
+        try:
+            message = event["message"]
+            sender = event["sender"]
+            image_data = event.get("image_data")
+
+            # メッセージをWebSocketに送信
             self.send(text_data=json.dumps({
                 "message": message,
-                # 画像データを送信
-                "image_data": image_data
+                "sender": sender,
+                "image_data": image_data if image_data else None
             }))
-        else:
-            self.send(text_data=json.dumps({
-                "message": message
-            }))
+        except Exception as e:
+            print(f"Error in chat_message: {e}")
+            traceback.print_exc()
 
     def send_line_notify(self, message):
         url = "https://notify-api.line.me/api/notify"
@@ -213,11 +230,14 @@ class ChatConsumer(WebsocketConsumer):
         return data
 
     def get_service(self):
-        # サービスアカウントのJSONファイルのパスを環境変数から取得
-        google_drive_api_json_path = os.getenv('GOOGLE_DRIVE_API_JSON_PATH')
+        # 環境変数からBase64エンコードされたサービスアカウント情報を取得
+        service_account_info = base64.b64decode(os.getenv('GOOGLE_CREDENTIALS')).decode('utf-8')
 
-        # サービスアカウント認証を使って認証情報を取得
-        creds = Credentials.from_service_account_file(google_drive_api_json_path, scopes=SCOPES)
+        # JSONを辞書に変換
+        credentials_dict = json.loads(service_account_info)
+
+        # from_service_account_info() を使って認証情報を取得
+        creds = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
 
         # Google Drive APIクライアントを作成
         service = build('drive', 'v3', credentials=creds)

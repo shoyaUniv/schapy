@@ -78,6 +78,12 @@
                     border-color: transparent;
                   }
                 }
+
+                #room-name-submit {
+                  width: 200px;
+                  height: 30px;
+                  background: rgb(121, 239, 85);
+                }
               </style>
             <title>Chat Room</title>
     </head>
@@ -91,8 +97,10 @@
     <body>
         {% if user.is_authenticated %}
         <p class="typing-animation">こんにちは。 {{ user.username }}さん!</p>
-        <p class="typing-animation">どのルームに入りますか。適当なルーム名を記述してください。</p><br>
-        <input id="room-name-input" type="text" size="100"><br>
+        <p class="typing-animation">どのルームに入りますか。適当なルーム名を記述してください。</p>
+        <br>
+        <input id="room-name-input" type="text" size="100">
+        <br>
         <input id="room-name-submit" type="button" value="Enter">
         {% endif %}
 

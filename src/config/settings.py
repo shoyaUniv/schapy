@@ -40,7 +40,7 @@ LINE_NOTIFY_TOKEN = config('LINE_NOTIFY_TOKEN')
 GOOGLE_DRIVE_API_JSON_PATH = os.getenv('GOOGLE_DRIVE_API_JSON_PATH')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -180,13 +180,15 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [("redis", 6379)],  # Redis コンテナのホスト名とポート
+            "capacity": 1500,  # 必要に応じて容量を調整
+            "expiry": 10,      # メッセージの有効期限を秒単位で指定
         },
     },
 }
 
 # パスの確認
-if not GOOGLE_DRIVE_API_JSON_PATH:
-    raise ValueError("Google Drive API JSON path is not set in the environment variables.")
+# if not GOOGLE_DRIVE_API_JSON_PATH:
+#     raise ValueError("Google Drive API JSON path is not set in the environment variables.")
 
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'media') #追加
 # MEDIA_URL = '/media/' #追加

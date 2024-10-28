@@ -1,16 +1,3 @@
 ﻿________________
 
-システム図
-django
-News
-User
-HTML
-CSS
-950
-News API
-Quiz, Solution
-YouTube
-YouTube
-(Web Speech API)
-Summary
-Read
+日本語の場合 あかさたな カタカナ
