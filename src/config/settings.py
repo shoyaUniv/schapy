@@ -30,11 +30,10 @@ OPENAI_API_KEY = env('OPENAI_API_KEY')
 OPENAI_API_URL = env('OPENAI_API_URL')
 LINE_NOTIFY_TOKEN = env('LINE_NOTIFY_TOKEN')
 
-# Google Drive APIのJSONファイルパスを環境変数から取得
-# GOOGLE_DRIVE_API_JSON_PATH = os.getenv('GOOGLE_DRIVE_API_JSON_PATH')
-
 GOOGLE_CREDENTIALS = env("GOOGLE_CREDENTIALS")
 
+REDIS_HOST = env("REDIS_HOST")
+REDIS_PORT = env.int("REDIS_PORT")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -157,28 +156,50 @@ LOGOUT_REDIRECT_URL = 'home'
 
 ASGI_APPLICATION = "config.asgi.application"
 
+# CACHES = {
+#    "default": {
+#        "BACKEND": "django_redis.cache.RedisCache",
+#        "LOCATION": "redis://redis:6379/1",  # URL 修正
+#        "OPTIONS": {
+#            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#        }
+#    }
+# }
+
 CACHES = {
-   "default": {
-       "BACKEND": "django_redis.cache.RedisCache",
-       "LOCATION": "redis://redis:6379/1",  # URL 修正
-       "OPTIONS": {
-           "CLIENT_CLASS": "django_redis.client.DefaultClient",
-       }
-   }
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
 }
 
 # セッションストアとして Redis を使う場合（オプション）
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
+# # Channels レイヤーの設定
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [("redis", 6379)],  # Redis コンテナのホスト名とポート
+#             "capacity": 1500,  # 必要に応じて容量を調整
+#             "expiry": 10,      # メッセージの有効期限を秒単位で指定
+#         },
+#     },
+# }
+
 # Channels レイヤーの設定
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis", 6379)],  # Redis コンテナのホスト名とポート
-            "capacity": 1500,  # 必要に応じて容量を調整
-            "expiry": 10,      # メッセージの有効期限を秒単位で指定
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "capacity": 1500,
+            "expiry": 10,
         },
     },
 }
