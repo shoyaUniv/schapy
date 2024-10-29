@@ -9,21 +9,15 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
 from pathlib import Path
 import os
-from decouple import config
-from dotenv import load_dotenv
 import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
-env.read_env(os.path.join(BASE_DIR, ".env"))
-
-# .envファイルを読み込む
-load_dotenv()
+env.read_env(os.path.join(BASE_DIR, ".env")) 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -32,12 +26,15 @@ load_dotenv()
 
 # .env ファイルを読み込む
 SECRET_KEY = env("SECRET_KEY")
-OPENAI_API_KEY = config('OPENAI_API_KEY')
-OPENAI_API_URL = config('OPENAI_API_URL')
-LINE_NOTIFY_TOKEN = config('LINE_NOTIFY_TOKEN')
+OPENAI_API_KEY = env('OPENAI_API_KEY')
+OPENAI_API_URL = env('OPENAI_API_URL')
+LINE_NOTIFY_TOKEN = env('LINE_NOTIFY_TOKEN')
 
 # Google Drive APIのJSONファイルパスを環境変数から取得
-GOOGLE_DRIVE_API_JSON_PATH = os.getenv('GOOGLE_DRIVE_API_JSON_PATH')
+# GOOGLE_DRIVE_API_JSON_PATH = os.getenv('GOOGLE_DRIVE_API_JSON_PATH')
+
+GOOGLE_CREDENTIALS = env("GOOGLE_CREDENTIALS")
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False

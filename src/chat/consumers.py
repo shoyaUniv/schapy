@@ -4,8 +4,6 @@ import requests
 import os
 import io
 import base64
-import pytesseract
-from PIL import Image
 from io import BytesIO
 import traceback
 
@@ -35,6 +33,7 @@ r = redis.StrictRedis(host='redis', port=6379, db=0)  # Redisサーバーの設�
 OPENAI_API_KEY = settings.OPENAI_API_KEY
 OPENAI_API_BASE = settings.OPENAI_API_URL
 LINE_NOTIFY_TOKEN = settings.LINE_NOTIFY_TOKEN
+GOOGLE_CREDENTIALS = settings.GOOGLE_CREDENTIALS
 
 # 変数定義
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
@@ -107,7 +106,7 @@ class ChatConsumer(WebsocketConsumer):
                     other_users_print = ", ".join(otherUsers)
                     message = f"{username}さんがネガティブな文章を送信しました。\n送信されたメッセージ：{message}\n他に{other_users_print}がいます。"
                 else:
-                    message = f"{username}さんがネガティブな文章を送信しました。"
+                    message = f"{username}さんがネガティブな文章を送信しました。\n送信されたメッセージ：{message}"
                 self.send_line_notify(message)
                 received_message = received_data['changed']
             else:
@@ -230,19 +229,9 @@ class ChatConsumer(WebsocketConsumer):
         return data
 
     def get_service(self):
-        # 環境変数からBase64エンコードされたサービスアカウント情報を取得
-        service_account_info = base64.b64decode(os.getenv('GOOGLE_CREDENTIALS')).decode('utf-8')
-
-        # JSONを辞書に変換
-        credentials_dict = json.loads(service_account_info)
-
-        # from_service_account_info() を使って認証情報を取得
-        creds = Credentials.from_service_account_info(credentials_dict, scopes=SCOPES)
-
-        # Google Drive APIクライアントを作成
-        service = build('drive', 'v3', credentials=creds)
-        
-        return service
+        service_account_info = json.loads(base64.b64decode(settings.GOOGLE_CREDENTIALS).decode('utf-8'))
+        creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
+        return build('drive', 'v3', credentials=creds)
 
     def read_ocr(self, service, input_file, lang='en'):
         #サービスアカウントのメールアドレスを自分のアカウントのフォルダに設定済み
