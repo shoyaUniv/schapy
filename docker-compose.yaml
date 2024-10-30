@@ -2,7 +2,8 @@ version: '3.8'
 services:
   django:
     build: ./django
-    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    # command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    command: daphne -b 0.0.0.0 -p 8000 src.config.asgi:application
     ports:
       - "8000:8000"
     volumes:
@@ -18,31 +19,31 @@ services:
       timeout: 10s
       retries: 3
 
-  # db: 
-  #   image: postgres:15.4 
-  #   volumes: 
-  #     - postgres-data:/var/lib/postgresql/data 
-  #   environment: 
-  #     - POSTGRES_USER=iniad 
-  #     - POSTGRES_PASSWORD=password 
-  #     - POSTGRES_DB=testdb 
+  db: 
+    image: postgres:15.4 
+    volumes: 
+      - postgres-data:/var/lib/postgresql/data 
+    environment: 
+      - POSTGRES_USER=iniad 
+      - POSTGRES_PASSWORD=password 
+      - POSTGRES_DB=testdb 
 
   redis:
     image: redis:alpine
     ports: 
       - "6379:6379"
 
-  # nginx:
-  #   image: nginx:latest     
-  #   volumes:       
-  #     - ./nginx/conf:/etc/nginx/conf.d      
-  #     - ./src/collected_static:/static
-  #     - ./nginx/ssl:/etc/nginx/ssl
-  #   ports:       
-  #     - "8080:80"
-  #     - "8443:443"     
-  #   depends_on:       
-  #     - django
+  nginx:
+    image: nginx:latest     
+    volumes:       
+      - ./nginx/conf:/etc/nginx/conf.d      
+      - ./src/collected_static:/static
+      - ./nginx/ssl:/etc/nginx/ssl
+    ports:       
+      - "8080:80"
+      - "8443:443"     
+    depends_on:       
+      - django
 
 volumes: 
   postgres-data:
