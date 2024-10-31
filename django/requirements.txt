@@ -7,7 +7,7 @@ channels[daphne]
 channels_redis
 django-redis
 django-environ
-# openai
+openai
 langchain
 langchain-community 
 langchain-core

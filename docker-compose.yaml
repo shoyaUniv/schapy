@@ -12,13 +12,7 @@ services:
       - redis
     environment:
       - REDIS_HOST=redis
-      - POSTGRES_HOST=db
     env_file: ./django/.env
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   db: 
     image: postgres:15.4 
@@ -28,21 +22,11 @@ services:
       - POSTGRES_USER=iniad 
       - POSTGRES_PASSWORD=password 
       - POSTGRES_DB=testdb 
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   redis:
     image: redis:alpine
     ports: 
       - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
   nginx:
     image: nginx:latest     
