@@ -41,6 +41,8 @@ RUN pip install -r requirements.txt
 # アプリケーションのコードをコピー
 COPY . /code/
 
+ENV DJANGO_SETTINGS_MODULE=src.settings
+
 # データベースマイグレーション
 RUN python src/manage.py migrate
 
