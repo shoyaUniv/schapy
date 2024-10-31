@@ -44,7 +44,7 @@ RUN pip install -r requirements.txt
 COPY . /code/
 
 # データベースマイグレーション（絶対パスで指定）
-RUN python /code/src/manage.py migrate
+RUN python manage.py migrate
 
 # スーパーユーザーを作成
 RUN python -c "\
