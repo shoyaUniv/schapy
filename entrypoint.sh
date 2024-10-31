@@ -3,8 +3,14 @@
 # エラーが発生した場合にスクリプトを終了する
 set -e
 
-# データベースマイグレーション
-python ./src/manage.py migrate
+# データベースが利用可能になるまでリトライする
+echo "Waiting for database to be ready..."
+until python ./src/manage.py migrate; do
+    echo "Database is unavailable - sleeping"
+    sleep 3
+done
+
+echo "Database is ready. Running migrations and creating superuser..."
 
 # スーパーユーザーを作成
 python -c "\
