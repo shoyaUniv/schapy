@@ -9,6 +9,7 @@ if [ -z "$ADMIN_USERNAME" ] || [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]
 fi
 
 # データベースマイグレーション
+python manage.py makemigrations
 python manage.py migrate
 
 # スーパーユーザーの作成
