@@ -1,0 +1,17 @@
+Django
+psycopg2-binary
+# uvicorn
+redis
+wheel
+channels[daphne]
+channels_redis
+django-redis
+django-environ
+openai
+langchain
+langchain-community 
+langchain-core
+requests
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
