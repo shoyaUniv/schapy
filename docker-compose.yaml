@@ -12,6 +12,7 @@ services:
       - redis
     environment:
       - REDIS_HOST=redis
+      - POSTGRES_HOST=db
     env_file: ./django/.env
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000"]
