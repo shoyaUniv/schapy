@@ -3,19 +3,22 @@
 # エラーが発生した場合にスクリプトを終了する
 set -e
 
-# データベースの準備を待機する
+# データベースの準備を待機
 echo "Waiting for database to be ready..."
 until python ./src/manage.py showmigrations > /dev/null 2>&1; do
     echo "Database is unavailable - sleeping"
     sleep 3
 done
 
-# データベースマイグレーションの実行
+# マイグレーションの実行
 echo "Running database migrations..."
-if python ./src/manage.py migrate; then
-    echo "Database migrations completed successfully"
+python ./src/manage.py migrate
+
+# マイグレーションが正しく実行されたかテーブル確認
+if python ./src/manage.py dbshell -c "SELECT * FROM auth_user LIMIT 1;" > /dev/null 2>&1; then
+    echo "auth_user table exists. Migration successful."
 else
-    echo "Database migration failed"
+    echo "auth_user table does not exist. Migration may have failed."
     exit 1
 fi
 
