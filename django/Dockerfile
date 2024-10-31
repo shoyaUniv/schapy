@@ -42,7 +42,7 @@ RUN pip install -r requirements.txt
 COPY . /code/
 
 # データベースマイグレーション
-RUN python manage.py migrate
+RUN python src/manage.py migrate
 
 # スーパーユーザーを作成
 RUN python -c "\
