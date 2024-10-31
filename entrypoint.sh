@@ -1,24 +1,27 @@
 #!/bin/bash
 
-set -e  # エラー発生時にスクリプトを終了する
-
-# 環境変数の確認
-if [ -z "$ADMIN_USERNAME" ] || [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]; then
-    echo "エラー: 環境変数 ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD が設定されていません。"
-    exit 1
-fi
+# エラーが発生した場合にスクリプトを終了する
+set -e
 
 # データベースマイグレーション
-python manage.py migrate auth
-python manage.py migrate
+python ./src/manage.py migrate
 
-# スーパーユーザーの作成
-python manage.py shell <<EOF
-from django.contrib.auth import get_user_model
-User = get_user_model()
-if not User.objects.filter(username="${ADMIN_USERNAME}").exists():
-    User.objects.create_superuser("${ADMIN_USERNAME}", "${ADMIN_EMAIL}", "${ADMIN_PASSWORD}")
-EOF
+# スーパーユーザーを作成
+python -c "\
+import os; \
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'src.settings'); \
+import django; \
+django.setup(); \
+from django.contrib.auth import get_user_model; \
+from django.db.utils import IntegrityError; \
+User = get_user_model(); \
+if not User.objects.filter(username='admin').exists(): \
+    try: \
+        User.objects.create_superuser('admin', 'admin@example.com', 'admin'); \
+        print('Superuser created successfully'); \
+    except IntegrityError: \
+        print('Superuser already exists'); \
+"
 
-# コマンドを実行
-exec "$@"
+# daphneサーバーを起動
+exec daphne -b 0.0.0.0 -p 8000 src.config.asgi:application
