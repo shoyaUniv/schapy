@@ -12,7 +12,7 @@ done
 
 # マイグレーションの実行
 echo "Running database migrations..."
-python ./src/manage.py migrate
+python ./src/manage.py migrate --noinput
 
 # マイグレーションが正しく実行されたかテーブル確認
 if python ./src/manage.py dbshell -c "SELECT * FROM auth_user LIMIT 1;" > /dev/null 2>&1; then
