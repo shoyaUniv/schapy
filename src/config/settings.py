@@ -38,8 +38,12 @@ REDIS_PORT = env.int("REDIS_PORT")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
-
+# ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    'schapy.onrender.com',
+    'localhost',
+    '127.0.0.1'
+]
 
 # Application definition
 
@@ -205,8 +209,11 @@ CHANNEL_LAYERS = {
 # }
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://schapy.onrender.com/'
+    'https://schapy.onrender.com'
 ]
+
+CSRF_COOKIE_SECURE = True 
+SESSION_COOKIE_SECURE = True
 
 # パスの確認
 # if not GOOGLE_DRIVE_API_JSON_PATH:
