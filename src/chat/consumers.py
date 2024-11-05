@@ -6,6 +6,8 @@ import io
 import base64
 from io import BytesIO
 import traceback
+import openai
+from datetime import datetime
 
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -20,13 +22,13 @@ from langchain.agents import Tool, initialize_agent, AgentType
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_community.chat_models import ChatOpenAI
 
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google.oauth2.service_account import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-from googleapiclient.http import MediaIoBaseDownload
+# from google.auth.transport.requests import Request
+# from google.oauth2.credentials import Credentials
+# from google.oauth2.service_account import Credentials
+# from google_auth_oauthlib.flow import InstalledAppFlow
+# from googleapiclient.discovery import build
+# from googleapiclient.http import MediaFileUpload
+# from googleapiclient.http import MediaIoBaseDownload
 
 r = redis.StrictRedis(host='redis', port=6379, db=0)  # Redisサーバーの設定
 
@@ -58,9 +60,13 @@ class ChatConsumer(WebsocketConsumer):
 
             r.sadd(self.room_group_name, username)
 
+            # 全ての接続中ユーザーを取得
             all_users = r.smembers(self.room_group_name)
+            user_list = [user.decode() + '(あなた)' if user.decode() == username else user.decode() for user in all_users]
+
+            # クライアントに送信
             self.send(text_data=json.dumps({
-                'message': f'現在接続中のユーザー: {", ".join(user.decode() for user in all_users)}'
+                'message': f'現在接続中のユーザー: {", ".join(user_list)}'
             }))
         except Exception as e:
             print(f"Error in WebSocket connect: {e}")
@@ -99,18 +105,23 @@ class ChatConsumer(WebsocketConsumer):
         if data_type == 'text':
             message = text_data_json["message"]
             # ChatGPT APIを使用して、メッセージをポジティブな絵文字に変換
-            received_data = self.gpt(message)
+            # received_data = self.gpt(message)
+            received_data = self.gpt_revised(message)
+            changed_message = self.gpt_changed(message)
             
-            if received_data['flag'] == 0:
+            # if received_data['flag'] == 0:
+            if any(received_data.values()):
                 if otherUsers:
                     other_users_print = ", ".join(otherUsers)
                     message = f"{username}さんがネガティブな文章を送信しました。\n送信されたメッセージ：{message}\n他に{other_users_print}がいます。"
                 else:
                     message = f"{username}さんがネガティブな文章を送信しました。\n送信されたメッセージ：{message}"
                 self.send_line_notify(message)
-                received_message = received_data['changed']
+                received_message = changed_message['changed']
+                # received_message = received_data['changed']
             else:
-                received_message = received_data['original']
+                received_message = message
+                # received_message = received_data['original']
             
             # 変換されたメッセージをルームグループに送信
             async_to_sync(self.channel_layer.group_send)(
@@ -129,28 +140,32 @@ class ChatConsumer(WebsocketConsumer):
             ext = format.split('/')[-1]  # 画像の拡張子を取得
 
             # ファイル名を生成し、画像を保存
-            file_name = f"{username}_{self.room_name}.{ext}"
+            datetimer = datetime.now().strftime("%Y%m%d%H%M%S")
+            file_name = f"{username}_{self.room_name}_{datetimer}.{ext}"
             file_path = os.path.join('chat_images', file_name)
+            print(file_path)
             
             # 画像の保存
             try:
                 image = ContentFile(base64.b64decode(imgstr))
                 save_pa = default_storage.save(file_path, image)
 
-                service = self.get_service()
-                output = self.read_ocr(service, file_path, 'ja')
-                # 空行を削除
-                output_text = ''.join(filter(None, output))
+                # service = self.get_service()
+                # output = self.read_ocr(service, file_path, 'ja')
+                # # 空行を削除
+                # output_text = ''.join(filter(None, output))
 
-                received_data = self.gpt(output_text)
+                # received_data = self.gpt(output_text)
+                received_data = self.gpt_image(file_path)
 
-                if received_data['flag'] == 0:
+                # if received_data['flag'] == 0:
+                if any(received_data.values()):
                     if otherUsers:
                         other_users_print = ", ".join(otherUsers)
-                        message = f"{username}さんが良くない画像を送信しました。\n送信された画像の文字起こし：{output_text}\n他に{other_users_print}がいます。"
+                        message = f"{username}さんが良くない画像を送信しました。\n他に{other_users_print}がいます。"
                         image_url = '😊'
                     else:
-                        message = f"{username}さんがネガティブな文章を送信しました。\n送信された画像の文字起こし：{output_text}"
+                        message = f"{username}さんが良くない画像を送信しました。"
                         image_url = '😊'
                     self.send_line_notify(message)
                 else:
@@ -224,7 +239,86 @@ class ChatConsumer(WebsocketConsumer):
 
         # ChatGPT APIからの応答を取得
         result = chat(messages)
+        print("ChatGPT API返却データ:", result.content)
         data = json.loads(result.content)
+
+        return data
+    
+    def gpt_revised(self, text):
+        client = openai.OpenAI(
+            api_key=OPENAI_API_KEY,
+            base_url=OPENAI_API_BASE,
+        )
+
+        content = (
+            f"小学生の会話文です。{text}について、以下のように出力してください。"
+            """
+            {
+                "harassment": True or False,
+                "harassment/threatening": True or False,
+                "hate": True or False,
+                "hate/threatening": True or False,
+                "harassment/threatening": True or False,
+                "illicit": True or False,
+                "illicit/violent": True or False,
+                "self-harm": True or False,
+                "self-harm/intent": True or False,
+                "self-harm/instructions": True or False,
+                "sexual": True or False,
+                "sexual/minors": True or False,
+                "violence": True or False,
+                "violence/graphic": True or False,
+                "bullying": True or False,
+                "slander": True or False,
+            }
+            """         
+        )
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "system",
+                    "content": "あなたは優秀なアシスタントです。JSON形式で日本語で返答してください。",
+                },
+                {"role": "user", "content": content},
+            ],
+        )
+
+        data = json.loads(response.choices[0].message.content)
+
+        return data
+    
+    def gpt_changed(self, text):
+        client = openai.OpenAI(
+            api_key=OPENAI_API_KEY,
+            base_url=OPENAI_API_BASE,
+        )
+
+        content = (
+            f"{text}をポジティブなテキストに変換してください。" +
+            "以下のように出力してください。"
+            """
+            {
+                changed: 変換した文章
+            }
+            """      
+        )
+                   
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {
+                    "role": "system",
+                    "content": "あなたは優秀なアシスタントです。JSON形式で日本語で返答してください。",
+                },
+                {"role": "user", "content": content},
+            ],
+        )
+
+        data = json.loads(response.choices[0].message.content)
 
         return data
 
@@ -233,7 +327,7 @@ class ChatConsumer(WebsocketConsumer):
         creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
         return build('drive', 'v3', credentials=creds)
 
-    def read_ocr(self, service, input_file, lang='en'):
+    def read_ocr(self, service, input_file, lang='ja'):
         #サービスアカウントのメールアドレスを自分のアカウントのフォルダに設定済み
         # アップロードするファイルをGoogle Driveに送信する準備
         media_body = MediaFileUpload(input_file, mimetype=MIME_TYPE, resumable=True)
@@ -279,5 +373,74 @@ class ChatConsumer(WebsocketConsumer):
             # 1行目を無視する場合は[1:]
             mylist = f.read().splitlines()[1:]
 
+        print("OCR結果:", mylist)
+
         # 読み込んだテキストのリスト
         return mylist
+    
+    def encode_image(self, image_path):
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
+        
+    def gpt_image(self, image_path):
+        client = openai.OpenAI(
+            api_key=OPENAI_API_KEY,
+            base_url=OPENAI_API_BASE,
+        )
+
+        base64_image = self.encode_image(image_path)
+
+        content = (
+        f"{image_path}について、以下のように出力してください。"
+        """
+        {
+            "harassment": True or False,
+            "harassment/threatening": True or False,
+            "hate": True or False,
+            "hate/threatening": True or False,
+            "harassment/threatening": True or False,
+            "illicit": True or False,
+            "illicit/violent": True or False,
+            "self-harm": True or False,
+            "self-harm/intent": True or False,
+            "self-harm/instructions": True or False,
+            "sexual": True or False,
+            "sexual/minors": True or False,
+            "violence": True or False,
+            "violence/graphic": True or False,
+            "bullying": True or False,
+            "slander": True or False
+        }
+        """
+        )
+
+        response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        response_format={"type": "json_object"},
+        messages=[
+            {
+            "role": "system",
+            "content": "あなたは優秀なアシスタントです。JSON形式で日本語で返答してください。",
+            },
+            {
+            "role": "user",
+            "content": [
+                {
+                "type": "text",
+                "text": content,
+                },
+                {
+                "type": "image_url",
+                "image_url": {
+                    "url":  f"data:image/jpeg;base64,{base64_image}",
+                    "detail": "low"
+                },
+                },
+            ],
+            }
+        ],
+        )
+
+        data = json.loads(response.choices[0].message.content)
+
+        return data
