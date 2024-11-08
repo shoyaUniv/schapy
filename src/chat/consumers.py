@@ -22,13 +22,13 @@ from langchain.agents import Tool, initialize_agent, AgentType
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_community.chat_models import ChatOpenAI
 
-# from google.auth.transport.requests import Request
-# from google.oauth2.credentials import Credentials
-# from google.oauth2.service_account import Credentials
-# from google_auth_oauthlib.flow import InstalledAppFlow
-# from googleapiclient.discovery import build
-# from googleapiclient.http import MediaFileUpload
-# from googleapiclient.http import MediaIoBaseDownload
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google.oauth2.service_account import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaIoBaseDownload
 
 r = redis.StrictRedis(host='redis', port=6379, db=0)  # Redisサーバーの設定
 
@@ -49,6 +49,7 @@ class ChatConsumer(WebsocketConsumer):
             # ルーム名の取得やユーザーの認証
             self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
             self.room_group_name = "chat_%s" % self.room_name
+            self.room_history_name = f"room_history_{self.room_name}"
 
             user = self.scope["user"]
             username = user.username
@@ -104,10 +105,24 @@ class ChatConsumer(WebsocketConsumer):
 
         if data_type == 'text':
             message = text_data_json["message"]
+
+            r.lpush(self.room_history_name, json.dumps({
+                "text": message,
+                "sender": username,
+                "timestamp": datetime.now().isoformat()
+            }))
+            print(self.room_history_name)
+            # 10件のメッセージを取得
+            r.ltrim(self.room_history_name, 0, 9)
+            history_msg = r.lrange(self.room_history_name, 0, 9)
+            history = [json.loads(m.decode('utf-8')) for m in history_msg]
+            print('history_json')
+            print(history)
+
             # ChatGPT APIを使用して、メッセージをポジティブな絵文字に変換
             # received_data = self.gpt(message)
             received_data = self.gpt_revised(message)
-            changed_message = self.gpt_changed(message)
+            changed_message = self.gpt_changed(message, history=history)
             
             # if received_data['flag'] == 0:
             if any(received_data.values()):
@@ -169,7 +184,22 @@ class ChatConsumer(WebsocketConsumer):
                         image_url = '😊'
                     self.send_line_notify(message)
                 else:
-                    image_url = default_storage.url(save_pa)
+                    service = self.get_service()
+                    output = self.read_ocr(service, file_path, 'ja')
+                    output_text = ''.join(filter(None, output))
+                    received_data = self.gpt_revised(output_text)
+                    changed_message = self.gpt_changed(output_text)
+                    if any(received_data.values()):
+                        if otherUsers:
+                            other_users_print = ", ".join(otherUsers)
+                            message = f"{username}さんが良くない画像を送信しました。\n他に{other_users_print}がいます。"
+                            image_url = '😊'
+                        else:
+                            message = f"{username}さんが良くない画像を送信しました。"
+                            image_url = '😊'
+                        self.send_line_notify(message)
+                    else:
+                        image_url = default_storage.url(save_pa)
 
             except Exception as e:
                 print(f"Error saving image: {e}")
@@ -290,13 +320,22 @@ class ChatConsumer(WebsocketConsumer):
 
         return data
     
-    def gpt_changed(self, text):
+    def gpt_changed(self, text, history=None):
         client = openai.OpenAI(
             api_key=OPENAI_API_KEY,
             base_url=OPENAI_API_BASE,
         )
 
+        if history:
+            history_content = "\n".join([f"会話の過去のメッセージ: {msg['text']}" for msg in history])
+        else:
+            history_content = ""
+
+        print('history_content')
+        print(history_content)
+
         content = (
+            f"{history_content}\nこちらの会話文に合うように、" + 
             f"{text}をポジティブなテキストに変換してください。" +
             "以下のように出力してください。"
             """
