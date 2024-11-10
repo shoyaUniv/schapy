@@ -32,8 +32,8 @@ LINE_NOTIFY_TOKEN = env('LINE_NOTIFY_TOKEN')
 
 GOOGLE_CREDENTIALS = env("GOOGLE_CREDENTIALS")
 
-# REDIS_HOST = env("REDIS_HOST")
-# REDIS_PORT = env.int("REDIS_PORT")
+REDIS_HOST = env("REDIS_HOST")
+REDIS_PORT = env.int("REDIS_PORT")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -96,27 +96,27 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = { 
-    'default': { 
-        'ENGINE': 'django.db.backends.postgresql', 
-        'NAME': 'testdb', 
-        'USER': 'iniad', 
-        'PASSWORD': 'password', 
-        'HOST': 'db', 
-        'PORT': 5432, 
-    } 
-}
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': env('POSTGRES_DB', default='testdb'),
-#         'USER': env('POSTGRES_USER', default='iniad'),
-#         'PASSWORD': env('POSTGRES_PASSWORD', default='password'),
-#         'HOST': env('POSTGRES_HOST', default='db'),
-#         'PORT': '5432',
-#     }
+# DATABASES = { 
+#     'default': { 
+#         'ENGINE': 'django.db.backends.postgresql', 
+#         'NAME': 'testdb', 
+#         'USER': 'iniad', 
+#         'PASSWORD': 'password', 
+#         'HOST': 'db', 
+#         'PORT': 5432, 
+#     } 
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('POSTGRES_DB', default='testdb'),
+        'USER': env('POSTGRES_USER', default='iniad'),
+        'PASSWORD': env('POSTGRES_PASSWORD', default='password'),
+        'HOST': env('POSTGRES_HOST', default='db'),
+        'PORT': '5432',
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -165,11 +165,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static/')
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8080', 'http://localhost:8080']
+# CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8080', 'http://localhost:8080']
 
-# CSRF_TRUSTED_ORIGINS = [
-#     'https://schapy.onrender.com'
-# ]
+CSRF_TRUSTED_ORIGINS = [
+    'https://schapy.onrender.com'
+]
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
@@ -177,55 +177,55 @@ LOGOUT_REDIRECT_URL = 'home'
 
 ASGI_APPLICATION = "config.asgi.application"
 
-CACHES = {
-   "default": {
-       "BACKEND": "django_redis.cache.RedisCache",
-       "LOCATION": "redis://redis:6379/1",  # URL 修正
-       "OPTIONS": {
-           "CLIENT_CLASS": "django_redis.client.DefaultClient",
-       }
-   }
-}
-
 # CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#         }
-#     }
+#    "default": {
+#        "BACKEND": "django_redis.cache.RedisCache",
+#        "LOCATION": "redis://redis:6379/1",  # URL 修正
+#        "OPTIONS": {
+#            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#        }
+#    }
 # }
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 
 # セッションストアとして Redis を使う場合（オプション）
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
 # Channels レイヤーの設定
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("redis", 6379)],  # Redis コンテナのホスト名とポート
-            "capacity": 1500,  # 必要に応じて容量を調整
-            "expiry": 10,      # メッセージの有効期限を秒単位で指定
-        },
-    },
-}
-
 # CHANNEL_LAYERS = {
 #     "default": {
 #         "BACKEND": "channels_redis.core.RedisChannelLayer",
 #         "CONFIG": {
-#             "hosts": [(REDIS_HOST, REDIS_PORT)],
-#             "capacity": 1500,
-#             "expiry": 10,
+#             "hosts": [("redis", 6379)],  # Redis コンテナのホスト名とポート
+#             "capacity": 1500,  # 必要に応じて容量を調整
+#             "expiry": 10,      # メッセージの有効期限を秒単位で指定
 #         },
 #     },
 # }
 
-# CSRF_COOKIE_SECURE = True 
-# SESSION_COOKIE_SECURE = True
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
+            "capacity": 1500,
+            "expiry": 10,
+        },
+    },
+}
+
+CSRF_COOKIE_SECURE = True 
+SESSION_COOKIE_SECURE = True
 
 # パスの確認
 # if not GOOGLE_DRIVE_API_JSON_PATH:
