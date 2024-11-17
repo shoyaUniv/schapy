@@ -1,0 +1,103 @@
+{% load static %}
+
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- <link rel="stylesheet" href="{% static 'schapy/css/root.css' %}" type="text/css"> -->
+        <style type="text/css">
+          html {
+            font-size: 100%;
+            margin: 0;
+            padding: 0;
+          }
+    
+          body {
+            font-family: "游ゴシック体", YuGothic, "游ゴシック", "Yu Gothic", sans-serif;
+            min-height: 100vh;
+            line-height: 1.5; /* 行間を1.5倍に設定 */
+            margin: 0;
+            text-align: center;
+          }
+    
+          header {
+            border-bottom: 3px solid #00CCFF;
+            padding: 0px 0; /* 上下の余白を追加 */
+            text-align: center; /* テキストを中央揃え */
+            color: #00CCFF;
+          }
+    
+          header a {
+            text-decoration: none;
+            color: inherit;
+            display: block; /* aタグをブロック要素にすることで、全体をクリック可能に */
+            padding: 2px 0; /* 上下に20pxの余白を追加 */
+          }
+    
+          header a h1 {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 0; /* 余計なマージンを削除 */
+          }
+    
+          header a p {
+            font-size: 9px;
+            margin: 0; /* 余計なマージンを削除 */
+          }
+    
+          img, picture {
+            max-width: 100%;
+            display: block;
+          }
+    
+          ul[role='list'], ol[role='list'] {
+            list-style: none;
+          }
+    
+          input, button, textarea, select {
+            font: inherit;
+          }
+
+          .typing-animation {
+            width: 100ch;
+            border-right: 5px solid #000000;
+            overflow: hidden;
+            white-space: nowrap;
+            color:#000000;
+            font-size:1.5rem;
+            line-height:1.4;
+            font-weight:7;
+            animation: typing 3s steps(23), blink .4s step-end infinite alternate;
+          }
+          @keyframes typing {
+            from {
+              width: 0;
+            }
+          }
+          @keyframes blink {
+            50% {
+              border-color: transparent;
+            }
+          }
+        </style>
+        <title>Schapy</title>
+  </head>
+
+  <header>
+    <a href="{% url 'root' %}">
+      <h1>Schapy</h1>
+    </a>  
+  </header>
+
+  <body>
+    <h1>Schapy</h1>
+
+    <h3>INIADへようこそ！</h3>
+    <p class="typing-animation">ネットいじめを抑制するためのアプリケーションです。</p>
+    <p class="typing-animation">このアプリケーションでは誹謗中傷的文章の判定、変換を体験できます。</p>
+
+    <p><a href="{% url 'home' %}">NEXT</a></p>
+
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ルーム</title>
+
+    <style>
+        .message-received {
+            padding: 5px;
+            margin: 5px;
+            border-radius: 10px;
+        }
+        .text-message {
+            background-color: #f2f2f2;
+            display: inline-block;
+        }
+        .image-message img {
+            max-width: 200px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+          html {
+            font-size: 100%;
+            margin: 0;
+            padding: 0;
+          }
+    
+          body {
+            font-family: "游ゴシック体", YuGothic, "游ゴシック", "Yu Gothic", sans-serif;
+            min-height: 100vh;
+            line-height: 1.5;
+            margin: 0;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+          }
+
+          h3 {
+            text-align: center;
+          }
+    
+          header {
+            border-bottom: 3px solid #00CCFF;
+            padding: 0px 0;
+            text-align: center;
+            color: #00CCFF;
+          }
+    
+          header a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            padding: 2px 0;
+          }
+    
+          header a h1 {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 0;
+          }
+    
+          header a p {
+            font-size: 9px;
+            margin: 0;
+          }
+    
+          img, picture {
+            max-width: 100%;
+            display: block;
+          }
+    
+          ul[role='list'], ol[role='list'] {
+            list-style: none;
+          }
+    
+          input, button, textarea, select {
+            font: inherit;
+          }
+
+          #now-loading{
+            display: none; 
+            text-align: center; 
+            color: gray;
+          }
+
+          #button-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+         }
+          
+         #chat-message-submit, #chat-image-submit {
+            background-color: #50df248c;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+         }
+
+         #chat-message-submit:hover, #chat-image-submit:hover {
+            background-color: #68d047;
+         }
+
+
+          .chat-log {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            width: 80%;
+            max-width: 600px;
+            height: 400px;
+            overflow-y: scroll;
+            background-color: #d8d8d87d;
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+          }
+
+          .message-container {
+              display: flex;
+              margin: 10px 0;
+          }
+
+          .message-received {
+              padding: 10px;
+              border-radius: 15px;
+              max-width: 60%;
+              word-wrap: break-word;
+              box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+          }
+
+          .message-received.self {
+              background-color: #d1f4ff;
+              align-self: flex-start;
+          }
+
+          .message-received.other {
+              background-color: #f2f2f2;
+              align-self: flex-end;
+          }
+
+          .image-message img {
+              max-width: 100px;
+              max-height: 100px;
+              border-radius: 10px;
+          }
+
+          @media screen and (max-width: 600px) {
+              .message-received {
+                  max-width: 80%;
+              }
+          }
+
+    </style>
+
+</head>
+
+<header>
+    <a href="{% url 'root' %}">
+      <h1>Schapy</h1>
+    </a>  
+</header>
+
+<body>
+    <div id="chat-log"></div><br>
+    <div id="now-loading">Now Loading...</div><br>
+
+    <div id="button-container">
+        <input id="chat-message-input" type="text" size="50">
+        <input id="chat-message-submit" type="button" value="送信" aria-label="テキストメッセージを送信">
+    </div><br>
+    <div id="button-container">
+        <input id="chat-image-input" type="file" accept="image/*">
+        <input id="chat-image-submit" type="button" value="画像アップロード" aria-label="画像をアップロード">
+    </div>
+    
+    <p>誹謗中傷的テキスト例：</p>
+    <ul>
+        <li>お前嫌い。</li>
+        <li>うざい</li>
+        <li>ゴミ</li>
+        <li>お前、うろうろするな。</li>
+    </ul>
+    <h4>テキストを投稿する際は個人名などは投稿しないでください。</h4>
+
+    {{ room_name|json_script:"room-name" }}
+    
+    <script>
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+        let count = 0;
+    
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const chatSocket = new WebSocket(
+            protocol
+            + window.location.host
+            + '/ws/app01/chat/'
+            + roomName
+            + '/'
+        );
+    
+        // NowLoadingの表示
+        function printLoading() {
+            document.getElementById('now-loading').style.display = 'block';
+        }
+
+        // NowLoadingの非表示
+        function notLoading() {
+            document.getElementById('now-loading').style.display = 'none';
+        }
+
+        // メッセージを受け取る処理
+        chatSocket.onmessage = function(e) {
+            notLoading();
+
+            const data = JSON.parse(e.data);
+
+            const sender = data.sender || 'ユーザー名';  // 送信者名を取得
+            // const userMind = data.user_mind || false;
+
+            // if (userMind) {
+            //     printPopup(data.message);
+            // }
+
+            if (data.message.includes('が画像を送信しました: ')) {
+                // 画像が送信された場合
+                const obj = data.message.split('が画像を送信しました: ')[1]; 
+                if (obj.includes('😊')) {
+                    // 絵文字が送信された場合
+                    addTextMessage(sender, obj, 'other');
+                } else {
+                    // 画像URLが送信された場合
+                    addImageMessage(sender, obj, 'other');
+                }
+            } else {
+                // テキストメッセージが送信された場合の処理
+                addTextMessage(sender, data.message, 'other');
+            }
+        };
+
+        // WebSocket切断時、エラーをコンソールに出力
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        // 入力ボックスに自動的にフォーカスを設定
+        document.querySelector('#chat-message-input').focus();
+
+        // Enterキーが押された場合、送信ボタンをクリックする処理
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            if (e.keyCode === 13) { 
+                document.querySelector('#chat-message-submit').click(); 
+            }
+        };
+
+        // テキストメッセージを送信する処理
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            const msgInputer = document.querySelector('#chat-message-input');
+            const message = msgInputer.value;
+            
+            if (message) {
+                printLoading();
+                // printPopup(message);
+                // msgInputer.value = '';
+
+                chatSocket.send(JSON.stringify({
+                    'type': 'text',
+                    'message': message
+                }));
+
+                // 自分のメッセージを表示（送信後）
+                addTextMessage('あなた', message, 'self');
+                
+                msgInputer.value = '';
+            }
+        };
+        // document.querySelector('#chat-message-submit').onclick = function(e) {
+        //     const msgInputer = document.querySelector('#chat-message-input');
+        //     const message = msgInputer.value;
+        //     const data = JSON.parse(e.data);
+        //     const userMind = data.user_mind || false;
+            
+        //     if (message && userMind) {
+        //         printPopup(message);  // ここで確認を行う
+        //         msgInputer.value = '';  // 入力欄をクリア
+        //     }
+        // };
+
+        // 画像をアップロードし、送信する処理
+        document.querySelector('#chat-image-submit').onclick = function(e) {
+            const imgInputer = document.querySelector('#chat-image-input');
+            const fl = imgInputer.files[0];  // 選択された最初のファイルを取得
+
+            if (fl) {
+                printLoading();
+
+                const read = new FileReader();
+                read.onload = function(event) {
+                    const imgData = event.target.result;
+                    chatSocket.send(JSON.stringify({
+                        'type': 'image',  
+                        'image_data': imgData
+                    }));
+                };
+                read.readAsDataURL(fl);
+            }
+        };
+
+        // テキストをチャットに追加
+        function addTextMessage(sender, message, senderType = 'other') {
+            const chatLogs = document.getElementById('chat-log');
+            const messageContainer = document.createElement('div');
+            const msgDiv = document.createElement('div');
+            const senderSpan = document.createElement('span');
+
+            // 送信者名を表示
+            senderSpan.textContent = `${sender}: `;
+            senderSpan.classList.add('sender');
+
+            msgDiv.classList.add('message-received', senderType);
+            msgDiv.textContent = message;
+            
+            messageContainer.classList.add('message-container');
+            messageContainer.appendChild(senderSpan);  // 送信者名を追加
+            messageContainer.appendChild(msgDiv);
+            
+            chatLogs.appendChild(messageContainer);
+            chatLogs.scrollTop = chatLogs.scrollHeight;
+        }
+
+        // 画像をチャットに追加
+        function addImageMessage(sender, imgUrl, senderType = 'other') {
+            const chatLogs = document.getElementById('chat-log');
+            const messageContainer = document.createElement('div');
+            const msgDiv = document.createElement('div');
+            const imgEle = document.createElement('img');
+            const senderSpan = document.createElement('span');
+
+            // 送信者名を表示
+            senderSpan.textContent = `${sender}: `;
+            senderSpan.classList.add('sender');
+
+            msgDiv.classList.add('message-received', 'image-message', senderType);
+            imgEle.src = imgUrl;
+
+            msgDiv.appendChild(imgEle);
+            messageContainer.classList.add('message-container');
+            messageContainer.appendChild(senderSpan);  // 送信者名を追加
+            messageContainer.appendChild(msgDiv);
+            
+            chatLogs.appendChild(messageContainer);
+            chatLogs.scrollTop = chatLogs.scrollHeight;
+        }
+
+        function printPopup(message) {
+            if (count < 2) {
+                // 確認ダイアログを表示し、「OK」が押された場合にカウントをインクリメント
+                const confirmed = confirm("悪質なメッセージです。本当にこの内容で送信しますか？");
+                if (confirmed) {
+                    count++;
+                    if (count === 2) {
+                        // 2回OKが押された場合にのみメッセージを送信
+                        printLoading();  // NowLoadingを表示
+                        chatSocket.send(JSON.stringify({
+                            'type': 'text',
+                            'message': message
+                        }));
+                        count = 0;  // カウントをリセット
+                    }
+                } else {
+                    // キャンセルが押された場合、カウントをリセット
+                    console.log("メッセージ送信がキャンセルされました。");
+                    notLoading();  // NowLoadingを非表示
+                    count = 0;
+                }
+            }
+        }
+
+    </script>
+</body>
+</html>

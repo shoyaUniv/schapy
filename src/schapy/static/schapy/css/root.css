@@ -1,0 +1,52 @@
+html {
+    font-size: 100%;
+    margin: 1000;
+    padding: 11000;
+}
+
+body {
+    font-family: "游ゴシック体", YuGothic, "游ゴシック", "Yu Gothic", sans-serif;
+    min-height: 100vh;
+    line-height: 0.1;
+    margin: 1000000;
+}
+
+header {
+    border-bottom: 3px solid #00CCFF;
+    height: 80px;
+    color: #00CCFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+header a {
+    text-decoration: none;
+    color: inherit;
+    width: 200px;
+    height: 50px;
+}
+
+header a h1 {
+    text-align: center;
+    font-size: 36px;
+    font-weight: bold;
+}
+
+header a p {
+    text-align: center;
+    font-size: 9px;
+}
+
+img, picture {
+    max-width: 100%;
+    display: block;
+}
+
+ul[role='list'], ol[role='list'] {
+    list-style: none;
+}
+
+input, button, textarea, select {
+    font: inherit;
+}
