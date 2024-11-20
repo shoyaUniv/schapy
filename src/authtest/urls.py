@@ -8,3 +8,4 @@ urlpatterns = [
     path('chat', views.chat_page, name='chat'),
     path('restricted/', views.restricted_page, name='restricted'),
 ]
+handler403 = 'authtest.views.permi_not'

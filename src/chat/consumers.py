@@ -95,7 +95,7 @@ class ChatConsumer(WebsocketConsumer):
         text_data_json = json.loads(text_data)
         data_type = text_data_json.get("type")
         # message = text_data_json["message"]
-        # user_mind = False
+        user_mind = False
 
         # 現在のユーザー名を取得
         user = self.scope["user"]
@@ -130,6 +130,7 @@ class ChatConsumer(WebsocketConsumer):
             
             # if received_data['flag'] == 0:
             if any(received_data.values()):
+                user_mind = True
                 trues = ",".join([key for key, value in received_data.items() if value == True])
                 if otherUsers:
                     other_users_print = ", ".join(otherUsers)
@@ -139,12 +140,12 @@ class ChatConsumer(WebsocketConsumer):
                 self.send_line_notify(USER_ID, message)
                 received_message = changed_message['changed']
                 # received_message = received_data['changed']
-                # user_mind = True
             else:
                 t = Tokenizer()
                 tokens = [token for token in t.tokenize(message) if token.part_of_speech.split(',')[0] != '記号']
                 
                 if tokens and any("命令" in token.infl_form for token in tokens if token.infl_form):
+                    user_mind = True
                     # 命令性の項目が検出された場合
                     if otherUsers:
                         other_users_print = ", ".join(otherUsers)
@@ -165,7 +166,7 @@ class ChatConsumer(WebsocketConsumer):
                     "type": "chat_message", 
                     "message": received_message, 
                     "sender": username,
-                    # "user_mind": user_mind
+                    "user_mind": user_mind
                 }
             )     
         
@@ -197,6 +198,7 @@ class ChatConsumer(WebsocketConsumer):
 
                 # if received_data['flag'] == 0:
                 if any(received_data.values()):
+                    user_mind = True
                     trues = ",".join([key for key, value in received_data.items() if value == True])
                     if otherUsers:
                         other_users_print = ", ".join(otherUsers)
@@ -213,6 +215,7 @@ class ChatConsumer(WebsocketConsumer):
                     received_data = self.gpt_revised(output_text)
                     changed_message = self.gpt_changed(output_text)
                     if any(received_data.values()):
+                        user_mind = True
                         trues = ",".join([key for key, value in received_data.items() if value == True])
                         if otherUsers:
                             other_users_print = ", ".join(otherUsers)
@@ -245,14 +248,15 @@ class ChatConsumer(WebsocketConsumer):
             message = event["message"]
             sender = event["sender"]
             image_data = event.get("image_data")
-            # user_mind = event.get("user_mind")
+            # user_mind = event["user_mind"]
+            user_mind = event.get("user_mind", False)
 
             # メッセージをWebSocketに送信
             self.send(text_data=json.dumps({
                 "message": message,
                 "sender": sender,
                 "image_data": image_data if image_data else None,
-                # "user_mind": user_mind
+                "user_mind": user_mind
             }))
         except Exception as e:
             print(f"Error in chat_message: {e}")

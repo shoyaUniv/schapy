@@ -211,33 +211,97 @@
         }
 
         // メッセージを受け取る処理
-        chatSocket.onmessage = function(e) {
+        // chatSocket.onmessage = function (e) {
+        //     notLoading();
+
+        //     const data = JSON.parse(e.data);
+        //     const sender = data.sender || "ユーザー名"; // 送信者名を取得
+        //     const message = data.message; // メッセージ内容
+        //     const userMind = data.user_mind; // 有害性フラグ
+
+        //     if (userMind) {
+        //         const userConfirmed = confirm(
+        //             `${sender}のメッセージに問題が検出されました。\n「${message}」を送信してもよろしいですか？`
+        //         );
+
+        //         if (!userConfirmed) {
+        //             console.log("メッセージの送信がキャンセルされました。");
+
+        //             chatSocket.send(JSON.stringify({
+        //                 'type': 'cancel_message',
+        //                 'message': message
+        //             }));
+
+        //             return; // メッセージをUIに反映しない
+        //         }
+        //         chatSocket.send(JSON.stringify({
+        //             'type': 'confirm_message',
+        //             'message': message
+        //         }));
+        //         console.log("メッセージ送信を許可しました。");
+        //     }
+
+        //     if (message.includes("が画像を送信しました: ")) {
+        //         // 画像が送信された場合
+        //         const obj = message.split("が画像を送信しました: ")[1];
+        //         if (obj.includes("😊")) {
+        //             // 絵文字が送信された場合
+        //             addTextMessage(sender, obj, "other");
+        //         } else {
+        //             // 画像URLが送信された場合
+        //             addImageMessage(sender, obj, "other");
+        //         }
+        //     } else {
+        //         // テキストメッセージが送信された場合
+        //         addTextMessage(sender, message, "other");
+        //     }
+        // };
+        chatSocket.onmessage = function (e) {
             notLoading();
 
             const data = JSON.parse(e.data);
+            const sender = data.sender || "ユーザー名";
+            const message = data.message;
+            const userMind = data.user_mind;
 
-            const sender = data.sender || 'ユーザー名';  // 送信者名を取得
-            // const userMind = data.user_mind || false;
+            // 有害性が検出された場合の確認
+            if (userMind) {
+                const userConfirmed = confirm(
+                    `${sender}のメッセージに問題が検出されました。\n「${message}」を送信してもよろしいですか？`
+                );
 
-            // if (userMind) {
-            //     printPopup(data.message);
-            // }
+                if (!userConfirmed) {
+                    console.log("メッセージの送信がキャンセルされました。");
+                    // chatSocket.send(JSON.stringify({
+                    //     'type': 'cancel_message',
+                    //     'message': message
+                    // }));
+                    return;
+                }
 
-            if (data.message.includes('が画像を送信しました: ')) {
-                // 画像が送信された場合
-                const obj = data.message.split('が画像を送信しました: ')[1]; 
-                if (obj.includes('😊')) {
-                    // 絵文字が送信された場合
-                    addTextMessage(sender, obj, 'other');
+                chatSocket.send(JSON.stringify({
+                    'type': 'text',
+                    'message': message
+                }));
+                console.log("メッセージ送信を許可しました。");
+                return; // ２回送信を阻止
+            }
+
+            // メッセージ内容に応じた表示
+            if (message.includes("が画像を送信しました: ")) {
+                const obj = message.split("が画像を送信しました: ")[1];
+                if (obj.includes("😊")) {
+                    addTextMessage(sender, obj, "other");
                 } else {
-                    // 画像URLが送信された場合
-                    addImageMessage(sender, obj, 'other');
+                    addImageMessage(sender, obj, "other");
                 }
             } else {
-                // テキストメッセージが送信された場合の処理
-                addTextMessage(sender, data.message, 'other');
+                addTextMessage(sender, message, "other");
             }
         };
+
+
+
 
         // WebSocket切断時、エラーをコンソールに出力
         chatSocket.onclose = function(e) {
@@ -254,16 +318,34 @@
             }
         };
 
-        // テキストメッセージを送信する処理
-        document.querySelector('#chat-message-submit').onclick = function(e) {
+        // document.querySelector('#chat-message-submit').onclick = function (e) {
+        //     const msgInputer = document.querySelector('#chat-message-input');
+        //     const message = msgInputer.value;
+
+        //     if (message) {
+        //         printLoading();
+
+        //         // 初期送信リクエスト
+        //         chatSocket.send(JSON.stringify({
+        //             'type': 'text',
+        //             'message': message
+        //         }));
+
+        //         //  // 自分のメッセージを表示（送信後）
+        //         //  addTextMessage(message);
+
+        //         // 入力欄をクリア
+        //         msgInputer.value = '';
+        //     }
+        // };
+        document.querySelector('#chat-message-submit').onclick = function (e) {
             const msgInputer = document.querySelector('#chat-message-input');
             const message = msgInputer.value;
-            
+
             if (message) {
                 printLoading();
-                // printPopup(message);
-                // msgInputer.value = '';
 
+                // サーバーに送信
                 chatSocket.send(JSON.stringify({
                     'type': 'text',
                     'message': message
@@ -271,21 +353,11 @@
 
                 // 自分のメッセージを表示（送信後）
                 addTextMessage('あなた', message, 'self');
-                
+
+                // 入力フィールドをクリア
                 msgInputer.value = '';
             }
         };
-        // document.querySelector('#chat-message-submit').onclick = function(e) {
-        //     const msgInputer = document.querySelector('#chat-message-input');
-        //     const message = msgInputer.value;
-        //     const data = JSON.parse(e.data);
-        //     const userMind = data.user_mind || false;
-            
-        //     if (message && userMind) {
-        //         printPopup(message);  // ここで確認を行う
-        //         msgInputer.value = '';  // 入力欄をクリア
-        //     }
-        // };
 
         // 画像をアップロードし、送信する処理
         document.querySelector('#chat-image-submit').onclick = function(e) {
