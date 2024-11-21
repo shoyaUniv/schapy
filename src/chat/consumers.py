@@ -238,7 +238,8 @@ class ChatConsumer(WebsocketConsumer):
                 self.room_group_name, {
                     "type": "chat_message", 
                     "message": f"{username} が画像を送信しました: {image_url}",
-                    "sender": username
+                    "sender": username,
+                    "user_mind": user_mind
                 }
             )
 

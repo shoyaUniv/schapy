@@ -279,12 +279,15 @@
                     return;
                 }
 
+                printLoading();
+
                 chatSocket.send(JSON.stringify({
                     'type': 'text',
                     'message': message
                 }));
                 console.log("メッセージ送信を許可しました。");
                 return; // ２回送信を阻止
+                notLoading();
             }
 
             // メッセージ内容に応じた表示
