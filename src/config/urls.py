@@ -29,4 +29,5 @@ urlpatterns = [
     path('app01/', include('authtest.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     # path('', schapy.views.root),
+    # path('api/', include('chat.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

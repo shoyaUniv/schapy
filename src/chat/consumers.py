@@ -287,6 +287,32 @@ class ChatConsumer(WebsocketConsumer):
         }
         response = requests.post(url, headers=headers, json=payload)
         return response.status_code
+    
+    # @csrf_exempt
+    # def send_line_message(self, request):
+    #     if request.method == "POST":
+    #         try:
+    #             data = json.loads(request.body)
+    #             user_id = data["userId"]
+    #             message = data["message"]
+
+    #             # LINE Messaging APIにリクエストを送信
+    #             url = "https://api.line.me/v2/bot/message/push"
+    #             headers = {
+    #                 "Content-Type": "application/json",
+    #                 "Authorization": f"Bearer {LINE_MESSAGING_API_ACCESS_TOKEN}"
+    #             }
+    #             payload = {
+    #                 "to": user_id,
+    #                 "messages": [{"type": "text", "text": message}]
+    #             }
+    #             response = requests.post(url, headers=headers, json=payload)
+    #             return JsonResponse({"status": "success", "code": response.status_code})
+    #         except Exception as e:
+    #             return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+    #     return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
+
     # def gpt(self, text):
     #     chat = ChatOpenAI(
     #         openai_api_key=OPENAI_API_KEY, 

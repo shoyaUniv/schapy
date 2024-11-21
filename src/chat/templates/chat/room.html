@@ -188,6 +188,7 @@
     {{ room_name|json_script:"room-name" }}
     
     <script>
+        const csrfToken = "{{ csrf_token }}";
         const roomName = JSON.parse(document.getElementById('room-name').textContent);
         let count = 0;
     
@@ -210,52 +211,6 @@
             document.getElementById('now-loading').style.display = 'none';
         }
 
-        // メッセージを受け取る処理
-        // chatSocket.onmessage = function (e) {
-        //     notLoading();
-
-        //     const data = JSON.parse(e.data);
-        //     const sender = data.sender || "ユーザー名"; // 送信者名を取得
-        //     const message = data.message; // メッセージ内容
-        //     const userMind = data.user_mind; // 有害性フラグ
-
-        //     if (userMind) {
-        //         const userConfirmed = confirm(
-        //             `${sender}のメッセージに問題が検出されました。\n「${message}」を送信してもよろしいですか？`
-        //         );
-
-        //         if (!userConfirmed) {
-        //             console.log("メッセージの送信がキャンセルされました。");
-
-        //             chatSocket.send(JSON.stringify({
-        //                 'type': 'cancel_message',
-        //                 'message': message
-        //             }));
-
-        //             return; // メッセージをUIに反映しない
-        //         }
-        //         chatSocket.send(JSON.stringify({
-        //             'type': 'confirm_message',
-        //             'message': message
-        //         }));
-        //         console.log("メッセージ送信を許可しました。");
-        //     }
-
-        //     if (message.includes("が画像を送信しました: ")) {
-        //         // 画像が送信された場合
-        //         const obj = message.split("が画像を送信しました: ")[1];
-        //         if (obj.includes("😊")) {
-        //             // 絵文字が送信された場合
-        //             addTextMessage(sender, obj, "other");
-        //         } else {
-        //             // 画像URLが送信された場合
-        //             addImageMessage(sender, obj, "other");
-        //         }
-        //     } else {
-        //         // テキストメッセージが送信された場合
-        //         addTextMessage(sender, message, "other");
-        //     }
-        // };
         chatSocket.onmessage = function (e) {
             notLoading();
 
@@ -267,15 +222,12 @@
             // 有害性が検出された場合の確認
             if (userMind) {
                 const userConfirmed = confirm(
-                    `${sender}のメッセージに問題が検出されました。\n「${message}」を送信してもよろしいですか？`
+                    `${sender}のメッセージに問題が検出されました。\n誹謗中傷は罪になる可能性があります。\n「${message}」を送信してもよろしいですか？`
                 );
 
                 if (!userConfirmed) {
                     console.log("メッセージの送信がキャンセルされました。");
-                    // chatSocket.send(JSON.stringify({
-                    //     'type': 'cancel_message',
-                    //     'message': message
-                    // }));
+                    sendMessageToServer("Uad940297b6c1fdcaafa15b6832f2a25c", `${sender}がメッセージの送信をキャンセルしました。`);
                     return;
                 }
 
@@ -287,6 +239,7 @@
                 }));
                 console.log("メッセージ送信を許可しました。");
                 return; // ２回送信を阻止
+
                 notLoading();
             }
 
@@ -321,26 +274,6 @@
             }
         };
 
-        // document.querySelector('#chat-message-submit').onclick = function (e) {
-        //     const msgInputer = document.querySelector('#chat-message-input');
-        //     const message = msgInputer.value;
-
-        //     if (message) {
-        //         printLoading();
-
-        //         // 初期送信リクエスト
-        //         chatSocket.send(JSON.stringify({
-        //             'type': 'text',
-        //             'message': message
-        //         }));
-
-        //         //  // 自分のメッセージを表示（送信後）
-        //         //  addTextMessage(message);
-
-        //         // 入力欄をクリア
-        //         msgInputer.value = '';
-        //     }
-        // };
         document.querySelector('#chat-message-submit').onclick = function (e) {
             const msgInputer = document.querySelector('#chat-message-input');
             const message = msgInputer.value;
@@ -428,30 +361,28 @@
             chatLogs.scrollTop = chatLogs.scrollHeight;
         }
 
-        function printPopup(message) {
-            if (count < 2) {
-                // 確認ダイアログを表示し、「OK」が押された場合にカウントをインクリメント
-                const confirmed = confirm("悪質なメッセージです。本当にこの内容で送信しますか？");
-                if (confirmed) {
-                    count++;
-                    if (count === 2) {
-                        // 2回OKが押された場合にのみメッセージを送信
-                        printLoading();  // NowLoadingを表示
-                        chatSocket.send(JSON.stringify({
-                            'type': 'text',
-                            'message': message
-                        }));
-                        count = 0;  // カウントをリセット
-                    }
-                } else {
-                    // キャンセルが押された場合、カウントをリセット
-                    console.log("メッセージ送信がキャンセルされました。");
-                    notLoading();  // NowLoadingを非表示
-                    count = 0;
+        async function sendMessageToServer(userId, message) {
+            try {
+                const response = await fetch("/app01/chat/api/send_line_message/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken,
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        message: message
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                console.log("サーバー経由でメッセージが送信されました！");
+            } catch (error) {
+                console.error("サーバーへのリクエストが失敗しました:", error);
             }
         }
-
     </script>
 </body>
 </html>
