@@ -104,24 +104,29 @@ class ChatConsumer(WebsocketConsumer):
         # r.sadd(self.room_group_name, username)
         all_users = r.smembers(self.room_group_name)
 
+        count_name = f"{self.room_group_name}_count"
+        # count = int(r.get(count_name) or 0)
+        count = int(r.hget(count_name, username) or 0)
+        # print("カウントの名前" + count_name)
+
         # 現在のユーザー以外の名前をフィルタリングし、bytes型をstrに変換
         otherUsers = [name.decode('utf-8') if isinstance(name, bytes) else name for name in all_users if name.decode('utf-8') != username]
 
         if data_type == 'text':
             message = text_data_json["message"]
 
-            r.lpush(self.room_history_name, json.dumps({
-                "text": message,
-                "sender": username,
-                "timestamp": datetime.now().isoformat()
-            }))
-            print(self.room_history_name)
-            # 10件のメッセージを取得
-            r.ltrim(self.room_history_name, 0, 9)
+            # r.lpush(self.room_history_name, json.dumps({
+            #     "text": message,
+            #     "sender": username,
+            #     "timestamp": datetime.now().isoformat()
+            # }))
+            # print("room_history_name" + self.room_history_name)
+            # # 10件のメッセージを取得
+            # r.ltrim(self.room_history_name, 0, 9)
             history_msg = r.lrange(self.room_history_name, 0, 9)
             history = [json.loads(m.decode('utf-8')) for m in history_msg]
-            print('history_json')
-            print(history)
+            # print('history_json')
+            # print(history)
 
             # ChatGPT APIを使用して、メッセージをポジティブな絵文字に変換
             # received_data = self.gpt(message)
@@ -130,13 +135,30 @@ class ChatConsumer(WebsocketConsumer):
             
             # if received_data['flag'] == 0:
             if any(received_data.values()):
+
+                r.lpush(self.room_history_name, json.dumps({
+                    "text": changed_message,
+                    "sender": username,
+                    "timestamp": datetime.now().isoformat()
+                }))
+                # print(self.room_history_name)
+                # 10件のメッセージを取得
+                r.ltrim(self.room_history_name, 0, 9)
+                history_msg = r.lrange(self.room_history_name, 0, 9)
+                history = [json.loads(m.decode('utf-8')) for m in history_msg]
+                print('誹謗中傷の場合のhistory_json')
+                print(history)
+
                 user_mind = True
+                count += 1
+                # r.set(count_name, count)
+                r.hset(count_name, username, count)
                 trues = ",".join([key for key, value in received_data.items() if value == True])
                 if otherUsers:
                     other_users_print = ", ".join(otherUsers)
-                    message = f"{username}さんが送信した文章で{trues}の項目で有害性が検知されました。\n他に{other_users_print}がいます。"
+                    message = f"{username}さんが入力した文章で{trues}の項目で有害性が検知されました。\n他に{other_users_print}がいます。\n{username}さんの中傷カウンター：{count}"
                 else:
-                    message = f"{username}さんが送信した文章で{trues}の項目で有害性が検知されました。"
+                    message = f"{username}さんが入力した文章で{trues}の項目で有害性が検知されました。\n中傷カウンター：{count}"
                 self.send_line_notify(USER_ID, message)
                 received_message = changed_message['changed']
                 # received_message = received_data['changed']
@@ -145,20 +167,44 @@ class ChatConsumer(WebsocketConsumer):
                 tokens = [token for token in t.tokenize(message) if token.part_of_speech.split(',')[0] != '記号']
                 
                 if tokens and any("命令" in token.infl_form for token in tokens if token.infl_form):
+                    r.lpush(self.room_history_name, json.dumps({
+                        "text": changed_message,
+                        "sender": username,
+                        "timestamp": datetime.now().isoformat()
+                    }))
+
+                    # 10件のメッセージを取得
+                    r.ltrim(self.room_history_name, 0, 9)
+                    history_msg = r.lrange(self.room_history_name, 0, 9)
+                    history = [json.loads(m.decode('utf-8')) for m in history_msg]
+                    print('命令の場合のhistory_json')
+                    print(history)
+
                     user_mind = True
+                    count += 1
+                    # r.set(count_name, count)
+                    r.hset(count_name, username, count)
                     # 命令性の項目が検出された場合
                     if otherUsers:
                         other_users_print = ", ".join(otherUsers)
-                        message = f"{username}さんが送信した文章で命令性の項目で有害性が検知されました。\n他に{other_users_print}がいます。"
+                        message = f"{username}さんが入力した文章で命令性の項目で有害性が検知されました。\n他に{other_users_print}がいます。\n{username}さんの中傷カウンター：{count}"
                     else:
-                        message = f"{username}さんが送信した文章で命令性の項目で有害性が検知されました。"
+                        message = f"{username}さんが入力した文章で命令性の項目で有害性が検知されました。\n中傷カウンター：{count}"
                     self.send_line_notify(USER_ID, message)
                     received_message = changed_message['changed']
                 else:
                     # 命令性の項目が検出されない、またはトークンが空の場合
                     received_message = message
+                    r.lpush(self.room_history_name, json.dumps({
+                        "text": received_message,
+                        "sender": username,
+                        "timestamp": datetime.now().isoformat()
+                    }))
+                    # print(self.room_history_name)
+                    # 10件のメッセージを取得
+                    r.ltrim(self.room_history_name, 0, 9)
                     # received_message = received_data['original']
-                    # user_mind = False
+                    user_mind = False
                     
             # 変換されたメッセージをルームグループに送信
             async_to_sync(self.channel_layer.group_send)(
@@ -166,7 +212,9 @@ class ChatConsumer(WebsocketConsumer):
                     "type": "chat_message", 
                     "message": received_message, 
                     "sender": username,
-                    "user_mind": user_mind
+                    "user_mind": user_mind,
+                    # "other_users_print": other_users_print,
+                    # "trues": trues
                 }
             )     
         
@@ -199,13 +247,16 @@ class ChatConsumer(WebsocketConsumer):
                 # if received_data['flag'] == 0:
                 if any(received_data.values()):
                     user_mind = True
+                    count += 1
+                    # r.set(count_name, count)
+                    r.hset(count_name, username, count)
                     trues = ",".join([key for key, value in received_data.items() if value == True])
                     if otherUsers:
                         other_users_print = ", ".join(otherUsers)
-                        message = f"{username}さんが送信した画像で{trues}の項目で有害性が検知されました。\n他に{other_users_print}がいます。"
+                        message = f"{username}さんが入力した画像で{trues}の項目で有害性が検知されました。\n他に{other_users_print}がいます。\n{username}さんの中傷カウンター：{count}"
                         image_url = '😊'
                     else:
-                        message = f"{username}さんが送信した画像で{trues}の項目で有害性が検知されました。"
+                        message = f"{username}さんが入力した画像で{trues}の項目で有害性が検知されました。\n中傷カウンター：{count}"
                         image_url = '😊'
                     self.send_line_notify(USER_ID, message)
                 else:
@@ -216,13 +267,16 @@ class ChatConsumer(WebsocketConsumer):
                     changed_message = self.gpt_changed(output_text)
                     if any(received_data.values()):
                         user_mind = True
+                        count += 1
+                        # r.set(count_name, count)
+                        r.hset(count_name, username, count)
                         trues = ",".join([key for key, value in received_data.items() if value == True])
                         if otherUsers:
                             other_users_print = ", ".join(otherUsers)
-                            message = f"{username}さんが送信した画像で{trues}の項目で有害性が検知されました。\n他に{other_users_print}がいます。"
+                            message = f"{username}さんが入力した画像で{trues}の項目で有害性が検知されました。\n他に{other_users_print}がいます。\n{username}さんの中傷カウンター：{count}"
                             image_url = '😊'
                         else:
-                            message = f"{username}さんが送信した画像で{trues}の項目で有害性が検知されました。"
+                            message = f"{username}さんが入力した画像で{trues}の項目で有害性が検知されました。\n中傷カウンター：{count}"
                             image_url = '😊'
                         self.send_line_notify(USER_ID, message)
                     else:
