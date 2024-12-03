@@ -103,6 +103,7 @@ class ChatConsumer(WebsocketConsumer):
 
         # r.sadd(self.room_group_name, username)
         all_users = r.smembers(self.room_group_name)
+        print(f"ルーム名：{self.room_group_name}")
 
         count_name = f"{self.room_group_name}_count"
         # count = int(r.get(count_name) or 0)

@@ -4,6 +4,9 @@ from django.http import JsonResponse
 from django.conf import settings
 import json
 import requests
+import redis
+
+r = redis.StrictRedis(host='redis', port=6379, db=0)
 
 LINE_MESSAGING_API_ACCESS_TOKEN = settings.LINE_MESSAGING_API_ACCESS_TOKEN
 
@@ -38,3 +41,31 @@ def send_line_message(request):
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)    
+
+def delete_redis_message(request):
+    if request.method == 'POST':
+        room_name = request.POST.get('room_name')
+        if not room_name:
+            return JsonResponse({'error': 'room_name is required'}, status=400)
+
+        room_history_name = f"room_history_{room_name}"
+        try:
+            # 削除前にRedisのリストを確認
+            current_history = r.lrange(room_history_name, 0, -1)
+            if not current_history:
+                return JsonResponse({'error': f'No messages found for {room_name}'}, status=404)
+
+            # 最後のメッセージを削除
+            deleted_message = r.rpop(room_history_name)
+            if deleted_message:
+                return JsonResponse({
+                    'message': 'Last message deleted successfully',
+                    'deleted_message': deleted_message.decode('utf-8'),
+                    'remaining_messages': [m.decode('utf-8') for m in r.lrange(room_history_name, 0, -1)]
+                })
+            else:
+                return JsonResponse({'error': 'No messages to delete'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid HTTP method'}, status=405)

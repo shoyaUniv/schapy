@@ -228,6 +228,7 @@
                 if (!userConfirmed) {
                     console.log("メッセージの送信がキャンセルされました。");
                     // sendMessageToServer("Uad940297b6c1fdcaafa15b6832f2a25c", `${sender}がメッセージの送信をキャンセルしました。`);
+                    deleteLastMessage(roomName)
                     return;
                 }
 
@@ -384,6 +385,29 @@
                 console.error("サーバーへのリクエストが失敗しました:", error);
             }
         }
+
+        function deleteLastMessage(roomName) {
+            fetch('/app01/chat/api/delete_redis_message/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'), // CSRFトークンを含める
+                },
+                body: JSON.stringify({ room_name: roomName }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    console.log("直前のメッセージを削除しました:", data.message);
+                } else if (data.error) {
+                    console.error("エラー:", data.error);
+                }
+            })
+            .catch(error => {
+                console.error("通信エラー:", error);
+            });
+        }
+
     </script>
 </body>
 </html>
