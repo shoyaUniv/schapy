@@ -454,12 +454,31 @@ class ChatConsumer(WebsocketConsumer):
             base_url=OPENAI_API_BASE,
         )
 
+        msg_box = []
+        msg_box_2 = []
+
         if history:
-            history_content = "\n".join([f"会話の過去のメッセージ: {msg['text']}" for msg in history])
+            for msg in history:
+                if "text" in msg:
+                    text = msg["text"]
+                    if isinstance(text, dict) and "changed" in text:
+                        msg_box.append(text["changed"])
+                    else:
+                        msg_box.append(text)
+                else:
+                    msg_box.append(str(msg))
+            # history_content = "\n".join(msg_box)
+
+            pre_msg = None
+            for cu_msg in msg_box:
+                if cu_msg != pre_msg:
+                    msg_box_2.append(cu_msg)
+                pre_msg = cu_msg
+            history_content = "\n".join(msg_box_2)
         else:
             history_content = ""
 
-        print('history_content')
+        print('過去のメッセージ一覧')
         print(history_content)
 
         content = (
